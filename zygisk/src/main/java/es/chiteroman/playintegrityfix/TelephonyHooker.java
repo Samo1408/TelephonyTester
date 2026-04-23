@@ -55,7 +55,7 @@ public class TelephonyHooker {
         if (hookSI) hookSubscriptionInfo();
         if (hookEN) hookEmergencyNumber();
         clearSyspropCaches();      // android.sysprop.TelephonyProperties + Samsung
-        // FIX 3: hookULocale() now uses a safe cache-clear-only approach (no Locale.setDefault)
+        // ULocale hook is intentionally non-invasive to avoid framework/ICU force-closes
         if (hookUL) hookULocale();
         if (hookCI) hookCellIdentity();
     }
@@ -311,63 +311,19 @@ public class TelephonyHooker {
     }
 
     /**
-     * FIX 3: Safe ULocale cache invalidation.
+     * Keep ULocale safe.
      *
-     * The original implementation called Locale.setDefault() which changes the
-     * JVM-wide default locale for ALL threads. This is highly invasive: any
-     * app code that calls Locale.getDefault() — including ICU internals,
-     * NumberFormat, DateFormat, etc. — will silently receive the spoofed country,
-     * causing crashes (e.g. RTL layout flips, number-format mismatches, NPEs in
-     * locale-sensitive resources).
-     *
-     * Safe alternative: just null out ULocale's internal static caches so that
-     * the next call to ULocale.getDefault() re-reads the system locale (which
-     * is already correct). The country spoof is carried by the property hook
-     * at the native layer; the Java layer only needs to not serve stale data.
+     * Do not mutate android.icu.util.ULocale internals or Locale defaults from
+     * inside target apps. Several Android/ICU builds keep static final sentinels
+     * and shared caches in this class; clearing them can break framework code and
+     * force-close apps. Telephony country spoofing is handled through the system
+     * property hook, while this toggle is retained as a non-invasive hook point.
      */
     private static void hookULocale() {
         String iso = s("COUNTRY_ISO");
-        if (iso == null || iso.isEmpty()) return;
-        try {
-            Class<?> ul = Class.forName("android.icu.util.ULocale");
-
-            // Clear all static cache fields on ULocale — safe, they will be
-            // lazily rebuilt from the system locale on next access.
-            int cleared = 0;
-            for (Field f : ul.getDeclaredFields()) {
-                if ((f.getModifiers() & Modifier.STATIC) == 0) continue;
-                String n = f.getName();
-                String t = f.getType().getName();
-                boolean isCache = n.startsWith("default")
-                        || n.contains("CACHE")
-                        || n.contains("Cache")
-                        || t.contains("Cache")
-                        || t.contains("SoftReference")
-                        || t.contains("WeakReference");
-                if (!isCache) continue;
-                try {
-                    f.setAccessible(true);
-                    f.set(null, null);
-                    cleared++;
-                } catch (Throwable ignored) {}
-            }
-
-            // Also try the known internal cache map name used in ICU4J bundled in Android
-            for (String cacheName : new String[]{"LOCALE_CACHE", "nameCache", "keyTypeData"}) {
-                try {
-                    Field f = ul.getDeclaredField(cacheName);
-                    f.setAccessible(true);
-                    Object obj = f.get(null);
-                    if (obj instanceof Map) ((Map<?, ?>) obj).clear();
-                    else f.set(null, null);
-                    cleared++;
-                } catch (Throwable ignored) {}
-            }
-
-            Log.i(TAG, "ULocale: cleared " + cleared + " cache(s) for country -> "
-                    + iso.toUpperCase(Locale.ROOT));
-        } catch (Throwable t) {
-            Log.e(TAG, "hookULocale", t);
-        }
+        if (iso == null || iso.isEmpty()) iso = s("NETWORK_COUNTRY_ISO");
+        if (iso == null || iso.isEmpty()) iso = s("SIM_COUNTRY_ISO");
+        Log.i(TAG, "ULocale hook enabled safely; framework locale left unchanged"
+                + (iso == null || iso.isEmpty() ? "" : " (country=" + iso.toUpperCase(Locale.ROOT) + ")"));
     }
 }
