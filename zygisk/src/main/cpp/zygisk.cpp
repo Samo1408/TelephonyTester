@@ -36,6 +36,8 @@
 
   T_Callback o_callback = nullptr;
   void (*o_system_property_read_callback)(prop_info *, T_Callback, void *) = nullptr;
+  using T_SystemPropertyGet = int (*)(const char *, char *);
+  T_SystemPropertyGet o_system_property_get = nullptr;
 
   ssize_t xread(int fd, void *buffer, size_t count) {
       ssize_t total = 0; char *buf = (char*)buffer; size_t rem = count;
@@ -99,13 +101,29 @@
       return s == 0 || readExact(fd, b.data(), s);
   }
 
+  std::string jsonEscape(const std::string &value) {
+      std::string out;
+      out.reserve(value.size() + 8);
+      for (char c : value) {
+          switch (c) {
+              case '\\': out += "\\\\"; break;
+              case '"': out += "\\\""; break;
+              case '\n': out += "\\n"; break;
+              case '\r': out += "\\r"; break;
+              case '\t': out += "\\t"; break;
+              default: out += c; break;
+          }
+      }
+      return out;
+  }
+
   std::string telephonyMapToJson() {
       std::string j = "{";
       bool first = true;
       for (const auto &[k, v] : gConfig.telephonyMap) {
           if (!first) j += ",";
           first = false;
-          j += "\"" + k + "\":\"" + v + "\"";
+          j += "\"" + jsonEscape(k) + "\":\"" + jsonEscape(v) + "\"";
       }
       j += "}";
       return j;
@@ -125,34 +143,34 @@
 
   // Map our config keys to the system property names that
   // android.telephony.TelephonyProperties / SemSystemProperties read from.
-  struct PropMap { const char* prop; const char* configKey; };
+  struct PropMap { const char* prop; const char* configKeys[4]; };
   static const PropMap kPropMappings[] = {
       // ===== android.sysprop.TelephonyProperties =====
       // operator_* (current registered network)
-      {"gsm.operator.numeric",           "OPERATOR_NUMERIC"},
-      {"gsm.operator.iso-country",       "NETWORK_COUNTRY_ISO"},
-      {"gsm.operator.alpha",             "OPERATOR_NAME"},
+      {"gsm.operator.numeric",           {"NETWORK_OPERATOR_NUMERIC", "OPERATOR_NUMERIC", nullptr, nullptr}},
+      {"gsm.operator.iso-country",       {"NETWORK_COUNTRY_ISO", "COUNTRY_ISO", nullptr, nullptr}},
+      {"gsm.operator.alpha",             {"OPERATOR_NAME", nullptr, nullptr, nullptr}},
       // icc_operator_* (SIM operator)
-      {"gsm.sim.operator.numeric",       "SIM_OPERATOR_NUMERIC"},
-      {"gsm.sim.operator.iso-country",   "SIM_COUNTRY_ISO"},
-      {"gsm.sim.operator.alpha",         "SIM_OPERATOR_NAME"},
+      {"gsm.sim.operator.numeric",       {"SIM_OPERATOR_NUMERIC", "SIM_OPERATOR", "OPERATOR_NUMERIC", nullptr}},
+      {"gsm.sim.operator.iso-country",   {"SIM_COUNTRY_ISO", "COUNTRY_ISO", nullptr, nullptr}},
+      {"gsm.sim.operator.alpha",         {"SIM_OPERATOR_NAME", "OPERATOR_NAME", nullptr, nullptr}},
 
       // ===== com.samsung.telephony.sysprop.SemTelephonyProps =====
       // Samsung uses "ril." prefixed system properties for the same values.
-      {"ril.operator.numeric",           "OPERATOR_NUMERIC"},
-      {"ril.operator.iso-country",       "NETWORK_COUNTRY_ISO"},
-      {"ril.operator.alpha",             "OPERATOR_NAME"},
-      {"ril.sim.operator.numeric",       "SIM_OPERATOR_NUMERIC"},
-      {"ril.sim.operator.iso-country",   "SIM_COUNTRY_ISO"},
-      {"ril.sim.operator.alpha",         "SIM_OPERATOR_NAME"},
-      {"ril.icc_operator_numeric",       "SIM_OPERATOR_NUMERIC"},
-      {"ril.icc_operator_iso_country",   "SIM_COUNTRY_ISO"},
-      {"ril.icc_operator_alpha",         "SIM_OPERATOR_NAME"},
+      {"ril.operator.numeric",           {"NETWORK_OPERATOR_NUMERIC", "OPERATOR_NUMERIC", nullptr, nullptr}},
+      {"ril.operator.iso-country",       {"NETWORK_COUNTRY_ISO", "COUNTRY_ISO", nullptr, nullptr}},
+      {"ril.operator.alpha",             {"OPERATOR_NAME", nullptr, nullptr, nullptr}},
+      {"ril.sim.operator.numeric",       {"SIM_OPERATOR_NUMERIC", "SIM_OPERATOR", "OPERATOR_NUMERIC", nullptr}},
+      {"ril.sim.operator.iso-country",   {"SIM_COUNTRY_ISO", "COUNTRY_ISO", nullptr, nullptr}},
+      {"ril.sim.operator.alpha",         {"SIM_OPERATOR_NAME", "OPERATOR_NAME", nullptr, nullptr}},
+      {"ril.icc_operator_numeric",       {"SIM_OPERATOR_NUMERIC", "SIM_OPERATOR", "OPERATOR_NUMERIC", nullptr}},
+      {"ril.icc_operator_iso_country",   {"SIM_COUNTRY_ISO", "COUNTRY_ISO", nullptr, nullptr}},
+      {"ril.icc_operator_alpha",         {"SIM_OPERATOR_NAME", "OPERATOR_NAME", nullptr, nullptr}},
       // Samsung CSC
-      {"ro.csc.country_code",            "COUNTRY_CODE"},
-      {"ro.csc.countryiso_code",         "COUNTRY_ISO"},
-      {"ro.csc.sales_code",              "OPERATOR_NAME"},
-      {"ro.boot.csc_sales_code",         "OPERATOR_NAME"},
+      {"ro.csc.country_code",            {"COUNTRY_CODE", nullptr, nullptr, nullptr}},
+      {"ro.csc.countryiso_code",         {"COUNTRY_ISO", "NETWORK_COUNTRY_ISO", "SIM_COUNTRY_ISO", nullptr}},
+      {"ro.csc.sales_code",              {"OPERATOR_NAME", "SIM_OPERATOR_NAME", nullptr, nullptr}},
+      {"ro.boot.csc_sales_code",         {"OPERATOR_NAME", "SIM_OPERATOR_NAME", nullptr, nullptr}},
   };
 
   static const char* lookupSpoofValue(const std::string_view& propName) {
@@ -163,9 +181,10 @@
       if (!sem && !gConfig.hookTelephonyProperties) return nullptr;
 
       for (const auto& m : kPropMappings) {
-          if (!m.configKey) continue;
-          if (propName == m.prop) {
-              auto it = gConfig.telephonyMap.find(m.configKey);
+          if (propName != m.prop) continue;
+          for (const char* key : m.configKeys) {
+              if (!key) continue;
+              auto it = gConfig.telephonyMap.find(key);
               if (it != gConfig.telephonyMap.end() && !it->second.empty()) {
                   return it->second.c_str();
               }
@@ -190,19 +209,45 @@
   }
 
   void systemPropertyReadCallback(prop_info *pi, T_Callback callback, void *cookie) {
-      if (pi && callback && cookie) o_callback = callback;
+      if (!pi || !callback || !o_system_property_read_callback) {
+          if (o_system_property_read_callback) o_system_property_read_callback(pi, callback, cookie);
+          return;
+      }
+      o_callback = callback;
       o_system_property_read_callback(pi, modifyCallback, cookie);
   }
 
-  bool doHookProperty() {
-      void *ptr = DobbySymbolResolver(nullptr, "__system_property_read_callback");
-      if (ptr && DobbyHook(ptr, (void*)systemPropertyReadCallback,
-                           (void**)&o_system_property_read_callback) == 0) {
-          LOGD("hooked __system_property_read_callback at %p", ptr);
-          return true;
+  int systemPropertyGet(const char *name, char *value) {
+      if (name && value) {
+          if (const char* spoof = lookupSpoofValue(std::string_view(name)); spoof) {
+              snprintf(value, PROP_VALUE_MAX, "%s", spoof);
+              if (gConfig.debug) LOGD("[%s]: -> %s", name, value);
+              return (int)strlen(value);
+          }
       }
-      LOGE("hook __system_property_read_callback failed");
-      return false;
+      return o_system_property_get ? o_system_property_get(name, value) : 0;
+  }
+
+  bool doHookProperty() {
+      bool hooked = false;
+      void *readPtr = DobbySymbolResolver(nullptr, "__system_property_read_callback");
+      if (readPtr && DobbyHook(readPtr, (void*)systemPropertyReadCallback,
+                           (void**)&o_system_property_read_callback) == 0) {
+          LOGD("hooked __system_property_read_callback at %p", readPtr);
+          hooked = true;
+      } else {
+          LOGE("hook __system_property_read_callback failed");
+      }
+
+      void *getPtr = DobbySymbolResolver(nullptr, "__system_property_get");
+      if (getPtr && DobbyHook(getPtr, (void*)systemPropertyGet,
+                           (void**)&o_system_property_get) == 0) {
+          LOGD("hooked __system_property_get at %p", getPtr);
+          hooked = true;
+      } else {
+          LOGE("hook __system_property_get failed");
+      }
+      return hooked;
   }
 
   void injectDex() {
@@ -357,11 +402,11 @@
               LOGD("[APP] hooking %s", currentPackage.c_str());
           }
 
-          if (gConfig.needsDex()) {
-              injectDex();
-          }
           if (gConfig.needsPropertyHook()) {
               doHookProperty();
+          }
+          if (gConfig.needsDex()) {
+              injectDex();
           }
       }
 

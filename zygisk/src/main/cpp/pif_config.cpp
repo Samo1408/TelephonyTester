@@ -110,6 +110,7 @@
           if (auto v = take("hookEmergencyNumber"); !v.empty()) config.hookEmergencyNumber = parseBool(v);
           if (auto v = take("hookTelephonyProperties"); !v.empty()) config.hookTelephonyProperties = parseBool(v);
           if (auto v = take("hookSemTelephonyProps"); !v.empty()) config.hookSemTelephonyProps = parseBool(v);
+          else if (auto legacy = take("hookSemSystemProperties"); !legacy.empty()) config.hookSemTelephonyProps = parseBool(legacy);
           if (auto v = take("hookULocale"); !v.empty()) config.hookULocale = parseBool(v);
           if (auto v = take("hookCellIdentity"); !v.empty()) config.hookCellIdentity = parseBool(v);
           if (auto v = take("DEBUG"); !v.empty()) config.debug = parseBool(v);
