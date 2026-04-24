@@ -195,6 +195,13 @@ static const char* lookupSpoofValue(const std::string_view& propName) {
 
     // Check standard mappings
     for (const auto& m : kPropMappings) {
+        bool isBuildProp = std::string(m.prop).find("ro.build.") == 0;
+        bool isProductProp = std::string(m.prop).find("ro.product.") == 0;
+        
+        // Skip if the specific hook is disabled
+        if (isBuildProp && !gConfig.hookBuildProperties) continue;
+        if (isProductProp && !gConfig.hookProductProperties) continue;
+
         if (propName == m.prop) {
             auto it = gConfig.deviceMap.find(m.configKey);
             if (it != gConfig.deviceMap.end() && !it->second.empty()) return it->second.c_str();
@@ -202,6 +209,17 @@ static const char* lookupSpoofValue(const std::string_view& propName) {
         
         // Check partition-specific variants (e.g., ro.product.system.model)
         for (const char* part : kPartitions) {
+            std::string sPart(part);
+            bool isSystem = sPart.find("system") != std::string::npos;
+            bool isVendor = sPart.find("vendor") != std::string::npos;
+            bool isOdm = sPart.find("odm") != std::string::npos;
+            bool isProduct = sPart.find("product") != std::string::npos;
+
+            if (isSystem && !gConfig.hookSystemProperties) continue;
+            if (isVendor && !gConfig.hookVendorProperties) continue;
+            if (isOdm && !gConfig.hookOdmProperties) continue;
+            if (isProduct && !gConfig.hookProductProperties) continue;
+
             std::string partProp = "ro.product.";
             partProp += part;
             partProp += ".";
@@ -218,9 +236,8 @@ static const char* lookupSpoofValue(const std::string_view& propName) {
             }
             
             // Also check ro.build.[partition].fingerprint etc
-            std::string buildPartProp = "ro.";
-            if (std::string(m.prop).find("ro.build.") == 0) {
-                buildPartProp += "build.";
+            if (isBuildProp) {
+                std::string buildPartProp = "ro.build.";
                 buildPartProp += part;
                 buildPartProp += ".";
                 buildPartProp += std::string(m.prop).substr(9);
@@ -352,7 +369,14 @@ public:
             return;
         }
 
-        if (!gConfig.spoofDevice || (!gConfig.allowedApps.empty() && !gConfig.isAllowed(pkg))) {
+        bool isAllowed = gConfig.allowedApps.empty() || gConfig.isAllowed(pkg) || gConfig.allowedApps.count("*");
+        
+        // Never spoof system UI or launcher to avoid black screens/instability unless explicitly requested
+        if (pkg == "com.android.systemui" || pkg.find("com.google.android.apps.nexuslauncher") != std::string::npos) {
+            if (!gConfig.allowedApps.count(pkg)) isAllowed = false;
+        }
+
+        if (!gConfig.spoofDevice || !isAllowed) {
             gConfig.spoofDevice = false; // Disable spoofing for this process
             close(fd);
             return;
