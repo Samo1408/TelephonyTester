@@ -329,6 +329,7 @@ void injectDex() {
 class PixelTester : public zygisk::ModuleBase {
 public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override {
+        this->api = api;
         gEnv = env;
     }
 
@@ -337,17 +338,20 @@ public:
         std::string pkg = process ? process : "";
         gEnv->ReleaseStringUTFChars(args->nice_name, process);
 
-        int fd = args->companion_fd;
+        int fd = api->connectCompanion();
         if (fd < 0) return;
 
         applySocketTimeout(fd);
         if (!pif::readConfig(fd, gConfig)) {
             LOGE("failed to read config from companion");
+            close(fd);
             return;
         }
 
-        if (!gConfig.spoofDevice) return;
-        if (!gConfig.allowedApps.empty() && !gConfig.isAllowed(pkg)) return;
+        if (!gConfig.spoofDevice || (!gConfig.allowedApps.empty() && !gConfig.isAllowed(pkg))) {
+            close(fd);
+            return;
+        }
 
         if (gConfig.needsDex()) {
             if (!readVector(fd, gDexBytes)) {
@@ -358,6 +362,7 @@ public:
         if (gConfig.needsPropertyHook()) {
             doHookProperty();
         }
+        close(fd);
     }
 
     void postAppSpecialize(const zygisk::AppSpecializeArgs *) override {
@@ -369,9 +374,38 @@ public:
     }
 
     void preServerSpecialize(zygisk::ServerSpecializeArgs *) override {
+        int fd = api->connectCompanion();
+        if (fd < 0) return;
+
+        applySocketTimeout(fd);
+        if (!pif::readConfig(fd, gConfig)) {
+            LOGE("failed to read config from companion");
+            close(fd);
+            return;
+        }
+
+        if (gConfig.needsDex()) {
+            if (!readVector(fd, gDexBytes)) {
+                LOGE("failed to read dex from companion");
+            }
+        }
+
+        if (gConfig.needsPropertyHook()) {
+            doHookProperty();
+        }
+        close(fd);
+    }
+
+    void postServerSpecialize(const zygisk::ServerSpecializeArgs *) override {
+        if (gConfig.spoofDevice && !gDexBytes.empty()) {
+            injectDex();
+        }
+        gDexBytes.clear();
+        gDexBytes.shrink_to_fit();
     }
 
 private:
+    zygisk::Api *api = nullptr;
 };
 
 static void companion_handler(int fd) {
