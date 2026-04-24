@@ -1,8 +1,8 @@
-name: Android CI
+name: Pixel Spoofer
 
 on:
   push:
-    branches: BuildGpt
+    branches: Pixel_Spoof
     paths-ignore:
       - '**.md'
       - '.github/workflows/autopif.yml'
@@ -18,7 +18,7 @@ jobs:
       with:
         submodules: 'recursive'
         fetch-depth: 1
-        ref: BuildGpt
+        ref: Pixel_Spoof
 
     - name: Set up JDK
       uses: actions/setup-java@v5
