@@ -1,7 +1,7 @@
 id=pixeltester
 name=Pixel Tester - Device Spoof
-version=v2.1
-versionCode=3
+version=v2.2
+versionCode=4
 author=Modified for Pixel Testing
-description=Pixel device spoofing module with comprehensive device model support. Fixed WebUI and Black Screen issues.
-  
+description=Pixel device spoofing module. WebUI restored, ABI/Vendor crashes fixed, system processes protected.
+updateJson=
