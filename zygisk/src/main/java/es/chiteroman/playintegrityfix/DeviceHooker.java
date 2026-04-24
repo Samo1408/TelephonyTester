@@ -13,7 +13,7 @@ public class DeviceHooker {
     public static final String TAG = "PixelTester-J";
     private static final Map<String, String> values = new HashMap<>();
 
-    public static void init(String json) {
+    public static void init(String json, boolean patchBuild) {
         if (json == null || json.isEmpty()) {
             Log.i(TAG, "No device configuration provided");
             return;
@@ -26,63 +26,66 @@ public class DeviceHooker {
                 String v = obj.optString(k, "");
                 if (!v.isEmpty()) values.put(k, v);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to parse device config", e);
+        } catch (Throwable t) {
+            Log.e(TAG, "Failed to parse device config", t);
             return;
         }
-        Log.i(TAG, "Loaded " + values.size() + " device spoof values");
-
-        // Patch cached Java fields
-        patchBuildFields();
+        Log.i(TAG, "Loaded " + values.size() + " spoof values; patchBuild=" + patchBuild);
+        if (patchBuild) patchBuildFields();
     }
 
-    private static String s(String k) { 
-        return values.get(k); 
-    }
+    private static String s(String k) { return values.get(k); }
 
     private static void setStaticField(Class<?> cls, String fieldName, Object value) {
         if (value == null) return;
         try {
             Field f = cls.getDeclaredField(fieldName);
             f.setAccessible(true);
-            
-            // Remove final modifier if necessary
+            // Try to clear the FINAL bit through Android's "accessFlags" backing field.
             try {
-                Field modifiersField = Field.class.getDeclaredField("accessFlags");
-                modifiersField.setAccessible(true);
-                modifiersField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
-            } catch (Throwable ignored) {}
-
+                Field af = Field.class.getDeclaredField("accessFlags");
+                af.setAccessible(true);
+                af.setInt(f, f.getModifiers() & ~Modifier.FINAL);
+            } catch (Throwable ignored) {
+                // Some ROMs don't expose accessFlags — try standard "modifiers"
+                try {
+                    Field mf = Field.class.getDeclaredField("modifiers");
+                    mf.setAccessible(true);
+                    mf.setInt(f, f.getModifiers() & ~Modifier.FINAL);
+                } catch (Throwable ignored2) { /* fall through, set may still work */ }
+            }
             f.set(null, value);
-            Log.d(TAG, cls.getSimpleName() + "." + fieldName + " patched to " + value);
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            // Don't log every failure as error — many fields are optional per ROM.
+            if (Log.isLoggable(TAG, Log.DEBUG)) Log.d(TAG, "skip " + cls.getSimpleName() + "." + fieldName + ": " + t.getMessage());
+        }
     }
 
     private static void patchBuildFields() {
         try {
             Class<?> b = Class.forName("android.os.Build");
-            
-            setStaticField(b, "BRAND", s("brand"));
+            setStaticField(b, "BRAND",        s("brand"));
             setStaticField(b, "MANUFACTURER", s("manufacturer"));
-            setStaticField(b, "MODEL", s("model"));
-            setStaticField(b, "PRODUCT", s("productName"));
-            setStaticField(b, "DEVICE", s("deviceCode"));
-            setStaticField(b, "BOARD", s("board"));
-            setStaticField(b, "HARDWARE", s("hardware"));
-            setStaticField(b, "FINGERPRINT", s("buildFingerprint"));
-            setStaticField(b, "ID", s("buildId"));
-            setStaticField(b, "DISPLAY", s("buildDisplayId"));
-            setStaticField(b, "BOOTLOADER", s("bootloader"));
-            
+            setStaticField(b, "MODEL",        s("model"));
+            setStaticField(b, "PRODUCT",      s("productName"));
+            setStaticField(b, "DEVICE",       s("deviceCode"));
+            setStaticField(b, "BOARD",        s("board"));
+            setStaticField(b, "HARDWARE",     s("hardware"));
+            setStaticField(b, "FINGERPRINT",  s("buildFingerprint"));
+            setStaticField(b, "ID",           s("buildId"));
+            setStaticField(b, "DISPLAY",      s("buildDisplayId"));
+            setStaticField(b, "BOOTLOADER",   s("bootloader"));
+            setStaticField(b, "TYPE",         "user");
+            setStaticField(b, "TAGS",         "release-keys");
+
             Class<?> v = Class.forName("android.os.Build$VERSION");
-            setStaticField(v, "INCREMENTAL", s("buildIncremental"));
-            setStaticField(v, "RELEASE", s("buildRelease"));
+            setStaticField(v, "INCREMENTAL",    s("buildIncremental"));
+            setStaticField(v, "RELEASE",        s("buildRelease"));
             setStaticField(v, "SECURITY_PATCH", s("securityPatch"));
-            
-            try {
-                int sdk = Integer.parseInt(s("buildSdk"));
-                setStaticField(v, "SDK_INT", sdk);
-            } catch (Throwable ignored) {}
+
+            // SDK_INT must remain consistent with the actual runtime to avoid app crashes.
+            // We deliberately do NOT patch SDK_INT — many apps (including Play Services)
+            // crash if it disagrees with the real platform.
 
             Log.i(TAG, "Build fields patched successfully");
         } catch (Throwable t) {
