@@ -28,7 +28,7 @@ plugins {
 
   tasks.register<Zip>("zip") {
       dependsOn("copyZygiskFiles")
-      archiveFileName.set("TeleInject.zip")
+      archiveFileName.set("PixelTester.zip")
       destinationDirectory.set(project.rootDir.resolve("out"))
       from(project.rootDir.resolve("module"))
   }

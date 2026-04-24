@@ -22,6 +22,6 @@ pluginManagement {
       }
   }
 
-  rootProject.name = "TryTele"
+  rootProject.name = "PixelTester"
   include(":zygisk")
   
