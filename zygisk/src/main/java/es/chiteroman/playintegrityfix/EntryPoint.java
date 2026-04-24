@@ -4,18 +4,14 @@ package es.chiteroman.playintegrityfix;
   import org.json.JSONObject;
 
   public final class EntryPoint {
-      public static final String TAG = "TeleInject";
+      public static final String TAG = "PixelTester";
 
-      public static void init(String telephonyJson, String flagsJson) {
+      public static void init(String deviceJson, String flagsJson) {
           try {
               JSONObject flags = (flagsJson == null || flagsJson.isEmpty())
                       ? new JSONObject() : new JSONObject(flagsJson);
-              boolean hookTM = flags.optBoolean("hookTelephonyManager", true);
-              boolean hookSI = flags.optBoolean("hookSubscriptionInfo", true);
-              boolean hookEN = flags.optBoolean("hookEmergencyNumber", true);
-              boolean hookUL = flags.optBoolean("hookULocale", true);
-              boolean hookCI = flags.optBoolean("hookCellIdentity", true);
-              TelephonyHooker.init(telephonyJson, hookTM, hookSI, hookEN, hookUL, hookCI);
+              // Initialize device hooker with device properties
+              DeviceHooker.init(deviceJson);
           } catch (Throwable t) {
               Log.e(TAG, "EntryPoint.init failed", t);
           }
