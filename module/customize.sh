@@ -34,15 +34,15 @@
 
   check_zygisk
 
-  # Preserve previous telephony.conf if installing over old version
-  if [ -f "/data/adb/modules/teleinject/telephony.conf" ]; then
-      ui_print "- Preserving previous telephony.conf"
-      cp -af /data/adb/modules/teleinject/telephony.conf "$MODPATH/telephony.conf"
+  # Preserve previous device.conf if installing over old version
+  if [ -f "/data/adb/modules/pixeltester/device.conf" ]; then
+      ui_print "- Preserving previous device.conf"
+      cp -af /data/adb/modules/pixeltester/device.conf "$MODPATH/device.conf"
   fi
 
   # Make sure config is writable from WebUI
-  chmod 0644 "$MODPATH/telephony.conf"
+  chmod 0644 "$MODPATH/device.conf"
 
-  ui_print "- TeleInject installed."
+  ui_print "- Pixel Tester installed."
   ui_print "- Open the WebUI from Magisk / KernelSU / APatch to configure."
   
