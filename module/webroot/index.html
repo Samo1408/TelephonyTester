@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pixel Tester</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="header">
+  <h1>Pixel Tester <span class="ver" id="version-text"></span></h1>
+  <p class="sub">Device spoofing for Pixel models</p>
+</div>
+
+<main class="content">
+
+  <section class="card">
+    <label class="row toggle">
+      <span>Master switch — Spoof Device</span>
+      <input type="checkbox" id="spoofDevice" class="sw" checked>
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>Property hooks</h2>
+    <p class="hint">Toggle which property partitions to spoof. If you experience black screens disable Vendor / ODM first.</p>
+    <label class="row toggle"><span>Build properties (ro.build.*)</span><input type="checkbox" id="hookBuildProperties" class="sw" checked></label>
+    <label class="row toggle"><span>System properties (ro.system.*)</span><input type="checkbox" id="hookSystemProperties" class="sw" checked></label>
+    <label class="row toggle"><span>Vendor properties (ro.vendor.*)</span><input type="checkbox" id="hookVendorProperties" class="sw"></label>
+    <label class="row toggle"><span>ODM properties (ro.odm.*)</span><input type="checkbox" id="hookOdmProperties" class="sw"></label>
+    <label class="row toggle"><span>Product properties (ro.product.*)</span><input type="checkbox" id="hookProductProperties" class="sw" checked></label>
+    <label class="row toggle"><span>Debug properties (ro.debuggable / ro.secure)</span><input type="checkbox" id="hookDebugProperties" class="sw" checked></label>
+  </section>
+
+  <section class="card">
+    <h2>Quick Pixel preset</h2>
+    <select id="device-preset" class="select">
+      <option value="">-- Choose a Pixel device --</option>
+    </select>
+    <p class="hint">Selecting a preset fills the fields below. Press <b>Save</b> to apply.</p>
+  </section>
+
+  <section class="card">
+    <h2>Device properties</h2>
+    <div class="grid">
+      <label>Brand <input id="brand" type="text"></label>
+      <label>Manufacturer <input id="manufacturer" type="text"></label>
+      <label>Model <input id="model" type="text"></label>
+      <label>Product Name <input id="productName" type="text"></label>
+      <label>Device Code <input id="deviceCode" type="text"></label>
+      <label>Board <input id="board" type="text"></label>
+      <label>Hardware <input id="hardware" type="text"></label>
+      <label>Board Platform <input id="boardPlatform" type="text"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Build properties</h2>
+    <div class="grid">
+      <label class="full">Build Fingerprint <input id="buildFingerprint" type="text"></label>
+      <label>Build ID <input id="buildId" type="text"></label>
+      <label>Build Display ID <input id="buildDisplayId" type="text"></label>
+      <label>Build Incremental <input id="buildIncremental" type="text"></label>
+      <label>Build Release <input id="buildRelease" type="text"></label>
+      <label>Build SDK <input id="buildSdk" type="text"></label>
+      <label>Security Patch <input id="securityPatch" type="text"></label>
+      <label>Build Description <input id="buildDescription" type="text"></label>
+      <label>Build Flavor <input id="buildFlavor" type="text"></label>
+      <label>Build Product <input id="buildProduct" type="text"></label>
+      <label>Build Characteristics <input id="buildCharacteristics" type="text"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Display & SoC</h2>
+    <div class="grid">
+      <label>Screen Width <input id="screenWidth" type="text"></label>
+      <label>Screen Height <input id="screenHeight" type="text"></label>
+      <label>Screen Density <input id="screenDensity" type="text"></label>
+      <label>SoC Model <input id="socModel" type="text"></label>
+      <label>SoC Manufacturer <input id="socManufacturer" type="text"></label>
+      <label>Bootloader <input id="bootloader" type="text"></label>
+      <label class="full">Baseband <input id="baseband" type="text"></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Apps to hook</h2>
+    <div class="row">
+      <input id="app-search" type="text" placeholder="Search packages…" class="grow">
+      <button id="reload-apps" class="btn">Reload</button>
+      <button id="clear-apps" class="btn">Clear</button>
+    </div>
+    <div id="app-list" class="app-list"><div class="hint">Loading installed packages…</div></div>
+    <div class="row">
+      <input id="add-app-input" type="text" placeholder="com.example.app  (or *)" class="grow">
+      <button id="add-app-btn" class="btn primary">Add</button>
+    </div>
+    <p class="hint">Tip: leave the list empty to spoof <b>no</b> app, or add <code>*</code> to spoof every app.</p>
+  </section>
+
+  <div class="save-bar">
+    <button id="save-btn" class="btn primary big">Save settings</button>
+    <span id="save-status" class="status"></span>
+  </div>
+
+</main>
+
+<script src="assets/scripts.js"></script>
+</body>
+</html>
