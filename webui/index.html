@@ -3,107 +3,149 @@
   <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>TeleInject</title>
+      <title>Pixel Tester</title>
       <link rel="stylesheet" href="assets/styles.css" type="text/css">
       <script type="module" crossorigin src="assets/scripts.js"></script>
   </head>
   <body>
       <div class="header">
-          <div>TeleInject <span id="version-text"></span></div>
+          <div>Pixel Tester - Device Spoof <span id="version-text"></span></div>
       </div>
       <div class="content" unresolved>
 
           <!-- Master switch -->
-          <label class="spoof-option" id="spoofTelephony-container">
-              Spoof Telephony
-              <md-switch id="spoofTelephony-toggle" selected></md-switch>
+          <label class="spoof-option" id="spoofDevice-container">
+              Spoof Device Properties
+              <md-switch id="spoofDevice-toggle" selected></md-switch>
               <md-ripple></md-ripple>
           </label>
 
-          <!-- Hook class toggles -->
-          <div class="telephony-section">
-              <div class="section-header">Hook Classes</div>
+          <!-- Property hook toggles -->
+          <div class="device-section">
+              <div class="section-header">Property Hooks</div>
               <label class="spoof-option">
-                  android.telephony.TelephonyManager
-                  <md-switch id="hookTelephonyManager" selected></md-switch>
+                  Build Properties
+                  <md-switch id="hookBuildProperties" selected></md-switch>
                   <md-ripple></md-ripple>
               </label>
               <label class="spoof-option">
-                  android.telephony.SubscriptionInfo
-                  <md-switch id="hookSubscriptionInfo" selected></md-switch>
+                  System Properties
+                  <md-switch id="hookSystemProperties" selected></md-switch>
                   <md-ripple></md-ripple>
               </label>
               <label class="spoof-option">
-                  android.telephony.emergency.EmergencyNumber
-                  <md-switch id="hookEmergencyNumber" selected></md-switch>
+                  Vendor Properties
+                  <md-switch id="hookVendorProperties" selected></md-switch>
                   <md-ripple></md-ripple>
               </label>
               <label class="spoof-option">
-                  android.sysprop.TelephonyProperties
-                  <md-switch id="hookTelephonyProperties" selected></md-switch>
+                  ODM Properties
+                  <md-switch id="hookOdmProperties" selected></md-switch>
                   <md-ripple></md-ripple>
               </label>
               <label class="spoof-option">
-                  com.samsung.telephony.sysprop.SemTelephonyProps
-                  <md-switch id="hookSemTelephonyProps" selected></md-switch>
+                  Product Properties
+                  <md-switch id="hookProductProperties" selected></md-switch>
                   <md-ripple></md-ripple>
               </label>
               <label class="spoof-option">
-                  android.icu.util.ULocale (getDisplayCountry)
-                  <md-switch id="hookULocale" selected></md-switch>
-                  <md-ripple></md-ripple>
-              </label>
-              <label class="spoof-option">
-                  android.telephony.CellIdentity*
-                  <md-switch id="hookCellIdentity" selected></md-switch>
+                  Debug Properties
+                  <md-switch id="hookDebugProperties" selected></md-switch>
                   <md-ripple></md-ripple>
               </label>
           </div>
 
-          <!-- Telephony spoof values -->
-          <div class="telephony-section" id="telephony-section">
-              <div class="section-header">Telephony Spoofing Values</div>
-              <div class="telephony-grid">
-                  <div class="input-group"><label>Country ISO</label>
-                      <md-outlined-text-field id="COUNTRY_ISO" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Country Code</label>
-                      <md-outlined-text-field id="COUNTRY_CODE" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>SIM Operator Numeric (MCCMNC)</label>
-                      <md-outlined-text-field id="SIM_OPERATOR_NUMERIC" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>SIM Operator</label>
-                      <md-outlined-text-field id="SIM_OPERATOR" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>SIM Operator Name</label>
-                      <md-outlined-text-field id="SIM_OPERATOR_NAME" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>SIM Country ISO</label>
-                      <md-outlined-text-field id="SIM_COUNTRY_ISO" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Network Country ISO</label>
-                      <md-outlined-text-field id="NETWORK_COUNTRY_ISO" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Network Operator Numeric</label>
-                      <md-outlined-text-field id="NETWORK_OPERATOR_NUMERIC" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Operator Numeric</label>
-                      <md-outlined-text-field id="OPERATOR_NUMERIC" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Operator Name</label>
-                      <md-outlined-text-field id="OPERATOR_NAME" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>MCC</label>
-                      <md-outlined-text-field id="MCC" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>MCC string</label>
-                      <md-outlined-text-field id="MCC_STRING" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>MNC</label>
-                      <md-outlined-text-field id="MNC" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>MNC string</label>
-                      <md-outlined-text-field id="MNC_STRING" type="text"></md-outlined-text-field></div>
+          <!-- Device preset selector -->
+          <div class="device-section">
+              <div class="section-header">Quick Device Presets</div>
+              <div class="preset-selector">
+                  <md-outlined-select id="device-preset" label="Select a Pixel device...">
+                      <md-select-option value="">-- Choose a device --</md-select-option>
+                  </md-outlined-select>
+              </div>
+          </div>
+
+          <!-- Device properties -->
+          <div class="device-section" id="device-section">
+              <div class="section-header">Device Properties</div>
+              <div class="device-grid">
+                  <div class="input-group"><label>Brand</label>
+                      <md-outlined-text-field id="brand" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Manufacturer</label>
+                      <md-outlined-text-field id="manufacturer" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Model</label>
+                      <md-outlined-text-field id="model" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Product Name</label>
+                      <md-outlined-text-field id="productName" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Device Code</label>
+                      <md-outlined-text-field id="deviceCode" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Board</label>
+                      <md-outlined-text-field id="board" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Hardware</label>
+                      <md-outlined-text-field id="hardware" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Board Platform</label>
+                      <md-outlined-text-field id="boardPlatform" type="text"></md-outlined-text-field></div>
+              </div>
+          </div>
+
+          <!-- Build properties -->
+          <div class="device-section">
+              <div class="section-header">Build Properties</div>
+              <div class="device-grid">
+                  <div class="input-group"><label>Build Fingerprint</label>
+                      <md-outlined-text-field id="buildFingerprint" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build ID</label>
+                      <md-outlined-text-field id="buildId" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build Display ID</label>
+                      <md-outlined-text-field id="buildDisplayId" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build Incremental</label>
+                      <md-outlined-text-field id="buildIncremental" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build Release</label>
+                      <md-outlined-text-field id="buildRelease" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build SDK</label>
+                      <md-outlined-text-field id="buildSdk" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Security Patch</label>
+                      <md-outlined-text-field id="securityPatch" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build Description</label>
+                      <md-outlined-text-field id="buildDescription" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build Flavor</label>
+                      <md-outlined-text-field id="buildFlavor" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build Product</label>
+                      <md-outlined-text-field id="buildProduct" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Build Characteristics</label>
+                      <md-outlined-text-field id="buildCharacteristics" type="text"></md-outlined-text-field></div>
+              </div>
+          </div>
+
+          <!-- Screen and SoC properties -->
+          <div class="device-section">
+              <div class="section-header">Display & SoC Properties</div>
+              <div class="device-grid">
+                  <div class="input-group"><label>Screen Width</label>
+                      <md-outlined-text-field id="screenWidth" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Screen Height</label>
+                      <md-outlined-text-field id="screenHeight" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Screen Density</label>
+                      <md-outlined-text-field id="screenDensity" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>SoC Model</label>
+                      <md-outlined-text-field id="socModel" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>SoC Manufacturer</label>
+                      <md-outlined-text-field id="socManufacturer" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Bootloader</label>
+                      <md-outlined-text-field id="bootloader" type="text"></md-outlined-text-field></div>
+                  <div class="input-group"><label>Baseband</label>
+                      <md-outlined-text-field id="baseband" type="text"></md-outlined-text-field></div>
               </div>
           </div>
 
           <!-- Allowed apps -->
-          <div class="telephony-section">
+          <div class="device-section">
               <div class="section-header">Apps to Hook</div>
 
               <div class="app-controls">
                   <md-outlined-text-field id="app-search" type="text" label="Search packages"></md-outlined-text-field>
-                  <md-outlined-button id="select-all-btn">Select All</md-outlined-button>
-                  <md-outlined-button id="clear-all-btn">Clear All</md-outlined-button>
-                  <md-outlined-button id="reload-apps-btn">Reload</md-outlined-button>
+                  <md-outlined-button id="reload-apps">Reload</md-outlined-button>
+                  <md-outlined-button id="clear-apps">Clear All</md-outlined-button>
               </div>
 
               <div id="app-list" class="app-list">
@@ -111,9 +153,9 @@
               </div>
 
               <div class="manual-add">
-                  <md-outlined-text-field id="manual-pkg" type="text"
+                  <md-outlined-text-field id="add-app-input" type="text"
                       label="Add package name manually (e.g. com.example)"></md-outlined-text-field>
-                  <md-filled-button id="add-pkg-btn">Add</md-filled-button>
+                  <md-filled-button id="add-app-btn">Add</md-filled-button>
               </div>
 
               <div class="hint">Tip: type <code>*</code> in the manual field and add it to apply to every app.</div>
