@@ -20,6 +20,17 @@
           bool hookProductProperties = true; // ro.product.* properties
           bool hookDebugProperties   = true; // ro.debuggable and related
 
+          // Identity / network spoof toggles (Java-side hooks)
+          bool hookSerial       = false;
+          bool hookAndroidId    = false;
+          bool hookGsfId        = false;
+          bool hookDrmId        = false;
+          bool hookImei         = false;
+          bool hookWifiMac      = false;
+          bool hookWifiInfo     = false;
+          bool hookCarrier      = false;
+          bool hookPhoneNumber  = false;
+
           std::unordered_set<std::string> allowedApps;
           bool debug = false;
 
@@ -28,7 +39,7 @@
           }
           [[nodiscard]] bool needsPropertyHook() const {
               return spoofDevice && (hookBuildProperties || hookSystemProperties 
-                  || hookVendorProperties || hookOdmProperties || hookProductProperties);
+                  || hookVendorProperties || hookOdmProperties || hookProductProperties || hookDebugProperties);
           }
           [[nodiscard]] bool isAllowed(const std::string& pkg) const {
               return allowedApps.find(pkg) != allowedApps.end();

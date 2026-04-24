@@ -64,13 +64,19 @@
           }
       }
 
-      static const std::array<std::string_view, 35> kDeviceKeys = {
+      static const std::array<std::string_view, 44> kDeviceKeys = {
           // Build and device properties
           "brand", "manufacturer", "model", "productName", "deviceCode", "board", "hardware",
           "boardPlatform", "buildFingerprint", "buildId", "buildDisplayId", "buildIncremental",
           "buildRelease", "buildSdk", "securityPatch", "buildDescription", "buildFlavor",
           "buildProduct", "buildCharacteristics", "screenWidth", "screenHeight", "screenDensity",
-          "socModel", "socManufacturer", "bootloader", "baseband", "name", "code"
+          "socModel", "socManufacturer", "bootloader", "baseband", "name", "code",
+          // Identity & network spoofing values (consumed by DeviceHooker.java)
+          "serialNumber", "androidId", "gsfId", "drmId",
+          "imei", "meid", "phoneNumber",
+          "simOperator", "networkOperator", "carrierName", "simOperatorName",
+          "simCountryIso", "networkCountryIso",
+          "wifiMac", "wifiSsid", "wifiBssid"
       };
 
       Config parseConfig(std::string_view content) {
@@ -113,6 +119,15 @@
           if (auto v = take("hookOdmProperties"); !v.empty()) config.hookOdmProperties = parseBool(v);
           if (auto v = take("hookProductProperties"); !v.empty()) config.hookProductProperties = parseBool(v);
           if (auto v = take("hookDebugProperties"); !v.empty()) config.hookDebugProperties = parseBool(v);
+          if (auto v = take("hookSerial");       !v.empty()) config.hookSerial       = parseBool(v);
+          if (auto v = take("hookAndroidId");    !v.empty()) config.hookAndroidId    = parseBool(v);
+          if (auto v = take("hookGsfId");        !v.empty()) config.hookGsfId        = parseBool(v);
+          if (auto v = take("hookDrmId");        !v.empty()) config.hookDrmId        = parseBool(v);
+          if (auto v = take("hookImei");         !v.empty()) config.hookImei         = parseBool(v);
+          if (auto v = take("hookWifiMac");      !v.empty()) config.hookWifiMac      = parseBool(v);
+          if (auto v = take("hookWifiInfo");     !v.empty()) config.hookWifiInfo     = parseBool(v);
+          if (auto v = take("hookCarrier");      !v.empty()) config.hookCarrier      = parseBool(v);
+          if (auto v = take("hookPhoneNumber");  !v.empty()) config.hookPhoneNumber  = parseBool(v);
           if (auto v = take("DEBUG"); !v.empty()) config.debug = parseBool(v);
 
           if (auto v = take("allowedApps"); !v.empty()) {
@@ -145,6 +160,15 @@
           ok = ok && writeExact(fd, &config.hookOdmProperties, sizeof(config.hookOdmProperties));
           ok = ok && writeExact(fd, &config.hookProductProperties, sizeof(config.hookProductProperties));
           ok = ok && writeExact(fd, &config.hookDebugProperties, sizeof(config.hookDebugProperties));
+          ok = ok && writeExact(fd, &config.hookSerial,       sizeof(config.hookSerial));
+          ok = ok && writeExact(fd, &config.hookAndroidId,    sizeof(config.hookAndroidId));
+          ok = ok && writeExact(fd, &config.hookGsfId,        sizeof(config.hookGsfId));
+          ok = ok && writeExact(fd, &config.hookDrmId,        sizeof(config.hookDrmId));
+          ok = ok && writeExact(fd, &config.hookImei,         sizeof(config.hookImei));
+          ok = ok && writeExact(fd, &config.hookWifiMac,      sizeof(config.hookWifiMac));
+          ok = ok && writeExact(fd, &config.hookWifiInfo,     sizeof(config.hookWifiInfo));
+          ok = ok && writeExact(fd, &config.hookCarrier,      sizeof(config.hookCarrier));
+          ok = ok && writeExact(fd, &config.hookPhoneNumber,  sizeof(config.hookPhoneNumber));
           ok = ok && writeExact(fd, &config.debug, sizeof(config.debug));
 
           const uint32_t deviceCount = (uint32_t)config.deviceMap.size();
@@ -171,6 +195,15 @@
           ok = ok && readExact(fd, &parsed.hookOdmProperties, sizeof(parsed.hookOdmProperties));
           ok = ok && readExact(fd, &parsed.hookProductProperties, sizeof(parsed.hookProductProperties));
           ok = ok && readExact(fd, &parsed.hookDebugProperties, sizeof(parsed.hookDebugProperties));
+          ok = ok && readExact(fd, &parsed.hookSerial,       sizeof(parsed.hookSerial));
+          ok = ok && readExact(fd, &parsed.hookAndroidId,    sizeof(parsed.hookAndroidId));
+          ok = ok && readExact(fd, &parsed.hookGsfId,        sizeof(parsed.hookGsfId));
+          ok = ok && readExact(fd, &parsed.hookDrmId,        sizeof(parsed.hookDrmId));
+          ok = ok && readExact(fd, &parsed.hookImei,         sizeof(parsed.hookImei));
+          ok = ok && readExact(fd, &parsed.hookWifiMac,      sizeof(parsed.hookWifiMac));
+          ok = ok && readExact(fd, &parsed.hookWifiInfo,     sizeof(parsed.hookWifiInfo));
+          ok = ok && readExact(fd, &parsed.hookCarrier,      sizeof(parsed.hookCarrier));
+          ok = ok && readExact(fd, &parsed.hookPhoneNumber,  sizeof(parsed.hookPhoneNumber));
           ok = ok && readExact(fd, &parsed.debug, sizeof(parsed.debug));
 
           uint32_t deviceCount = 0;

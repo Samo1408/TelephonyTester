@@ -131,7 +131,16 @@ std::string flagsToJson() {
     j += std::string("\"hookVendorProperties\":")  + b(gConfig.hookVendorProperties)  + ",";
     j += std::string("\"hookOdmProperties\":")     + b(gConfig.hookOdmProperties)     + ",";
     j += std::string("\"hookProductProperties\":") + b(gConfig.hookProductProperties) + ",";
-    j += std::string("\"hookDebugProperties\":")   + b(gConfig.hookDebugProperties);
+    j += std::string("\"hookDebugProperties\":")   + b(gConfig.hookDebugProperties)   + ",";
+    j += std::string("\"hookSerial\":")            + b(gConfig.hookSerial)            + ",";
+    j += std::string("\"hookAndroidId\":")         + b(gConfig.hookAndroidId)         + ",";
+    j += std::string("\"hookGsfId\":")             + b(gConfig.hookGsfId)             + ",";
+    j += std::string("\"hookDrmId\":")             + b(gConfig.hookDrmId)             + ",";
+    j += std::string("\"hookImei\":")              + b(gConfig.hookImei)              + ",";
+    j += std::string("\"hookWifiMac\":")           + b(gConfig.hookWifiMac)           + ",";
+    j += std::string("\"hookWifiInfo\":")          + b(gConfig.hookWifiInfo)          + ",";
+    j += std::string("\"hookCarrier\":")           + b(gConfig.hookCarrier)           + ",";
+    j += std::string("\"hookPhoneNumber\":")       + b(gConfig.hookPhoneNumber);
     j += "}"; return j;
 }
 
@@ -180,6 +189,27 @@ static const PropMap kMiscProps[] = {
     {"ro.soc.manufacturer",    "socManufacturer"},
 };
 
+// Identity-related native properties.
+// Each entry pairs the system_properties name with both the value key
+// and the toggle flag that gates it (checked at lookup time).
+struct IdentityPropMap { const char* name; const char* configKey; bool pif::Config::* toggle; };
+static const IdentityPropMap kIdentityProps[] = {
+    // Serial
+    {"ro.serialno",                  "serialNumber",  &pif::Config::hookSerial},
+    {"ro.boot.serialno",             "serialNumber",  &pif::Config::hookSerial},
+    {"sys.serialno",                 "serialNumber",  &pif::Config::hookSerial},
+    // WiFi MAC
+    {"ro.boot.wifimacaddr",          "wifiMac",       &pif::Config::hookWifiMac},
+    {"persist.sys.wifi.mac",         "wifiMac",       &pif::Config::hookWifiMac},
+    // Carrier / SIM
+    {"gsm.sim.operator.numeric",     "simOperator",       &pif::Config::hookCarrier},
+    {"gsm.sim.operator.alpha",       "simOperatorName",   &pif::Config::hookCarrier},
+    {"gsm.sim.operator.iso-country", "simCountryIso",     &pif::Config::hookCarrier},
+    {"gsm.operator.numeric",         "networkOperator",   &pif::Config::hookCarrier},
+    {"gsm.operator.alpha",           "carrierName",       &pif::Config::hookCarrier},
+    {"gsm.operator.iso-country",     "networkCountryIso", &pif::Config::hookCarrier},
+};
+
 // Partitions for ro.product.<partition>.<base> and ro.build.<partition>.<base>
 static const char* kPartitions[] = {
     "system", "system_ext", "vendor", "vendor_dlkm", "odm", "odm_dlkm", "product"
@@ -224,6 +254,16 @@ static const char* lookupSpoofValue(std::string_view propName) {
     for (const auto& m : kMiscProps) {
         if (propName == m.base) {
             if (!gConfig.hookBuildProperties && !gConfig.hookSystemProperties) return nullptr;
+            return lookupValue(m.configKey);
+        }
+    }
+
+    // Identity props are gated by their own per-feature toggle, NOT by
+    // build/system/vendor toggles (so users can spoof e.g. SERIAL without
+    // enabling vendor properties — which is the safer combination).
+    for (const auto& m : kIdentityProps) {
+        if (propName == m.name) {
+            if (!(gConfig.*(m.toggle))) return nullptr;
             return lookupValue(m.configKey);
         }
     }
@@ -364,6 +404,13 @@ void injectDex() {
  * Processes that we MUST never spoof — touching them causes black screens,
  * boot loops, or telephony failures.
  */
+static bool containsAny(std::string_view value, std::initializer_list<std::string_view> needles) {
+    for (auto needle : needles) {
+        if (!needle.empty() && value.find(needle) != std::string_view::npos) return true;
+    }
+    return false;
+}
+
 static bool isUnsafeProcess(const std::string& pkg) {
     if (pkg.empty()) return true;
     if (pkg == "system" || pkg == "system_server" || pkg == "zygote" || pkg == "zygote64") return true;
@@ -371,9 +418,12 @@ static bool isUnsafeProcess(const std::string& pkg) {
     if (pkg == "com.android.phone") return true;
     if (pkg == "com.android.nfc") return true;
     if (pkg == "com.android.bluetooth") return true;
+    if (pkg == "com.android.launcher3") return true;
+    if (pkg == "com.google.android.apps.nexuslauncher") return true;
+    if (pkg == "com.google.android.setupwizard") return true;
+    if (pkg == "com.android.permissioncontroller") return true;
     if (pkg == "com.android.providers.media.module") return true;
-    if (pkg.find("com.google.android.apps.nexuslauncher") != std::string::npos) return true;
-    if (pkg.find(".launcher") != std::string::npos) return true; // generic launchers
+    if (containsAny(pkg, {".launcher", "launcher", "inputmethod", "wallpaper", "telephony", "ims"})) return true;
     return false;
 }
 
@@ -384,9 +434,17 @@ public:
     void onLoad(zygisk::Api *api, JNIEnv *env) override { this->api = api; gEnv = env; }
 
     void preAppSpecialize(zygisk::AppSpecializeArgs *args) override {
+        if (!args || !args->nice_name) {
+            gConfig = {};
+            gDexBytes.clear();
+            return;
+        }
+
         const char *process = gEnv->GetStringUTFChars(args->nice_name, nullptr);
         std::string pkg = process ? process : "";
-        gEnv->ReleaseStringUTFChars(args->nice_name, process);
+        if (process) {
+            gEnv->ReleaseStringUTFChars(args->nice_name, process);
+        }
 
         // Reset state per process
         gConfig = {};
