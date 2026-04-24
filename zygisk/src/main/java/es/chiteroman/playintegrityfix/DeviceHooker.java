@@ -9,17 +9,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-/**
- * Java-side device property spoof helpers.
- *
- * The bulk of the spoofing is done in native code by intercepting
- * __system_property_read_callback. This hooks all ro.* properties
- * to return spoofed device and build properties.
- *
- * This class patches cached Java fields so that values that were
- * already snapshotted before the property hook was installed are
- * still replaced.
- */
 public class DeviceHooker {
     public static final String TAG = "PixelTester-J";
     private static final Map<String, String> values = new HashMap<>();
@@ -43,129 +32,61 @@ public class DeviceHooker {
         }
         Log.i(TAG, "Loaded " + values.size() + " device spoof values");
 
-        // Clear any cached system properties
-        clearBuildCaches();
-        clearSystemPropertyCaches();
+        // Patch cached Java fields
+        patchBuildFields();
     }
 
     private static String s(String k) { 
         return values.get(k); 
     }
 
-    private static Field findField(Class<?> cls, String name) {
-        Class<?> c = cls;
-        while (c != null && c != Object.class) {
-            try { 
-                return c.getDeclaredField(name); 
-            }
-            catch (NoSuchFieldException ignored) {}
-            c = c.getSuperclass();
-        }
-        return null;
-    }
-
-    private static void setField(Class<?> cls, Object instance, String fieldName, Object value) {
-        if (value == null) return;
-        try {
-            Field f = findField(cls, fieldName);
-            if (f == null) return;
-            f.setAccessible(true);
-            f.set(instance, value);
-            Log.d(TAG, cls.getSimpleName() + "." + fieldName + " = " + value);
-        } catch (Throwable ignored) {}
-    }
-
     private static void setStaticField(Class<?> cls, String fieldName, Object value) {
         if (value == null) return;
         try {
-            Field f = findField(cls, fieldName);
-            if (f == null) return;
-            if ((f.getModifiers() & Modifier.STATIC) == 0) return;
+            Field f = cls.getDeclaredField(fieldName);
             f.setAccessible(true);
+            
+            // Remove final modifier if necessary
+            try {
+                Field modifiersField = Field.class.getDeclaredField("accessFlags");
+                modifiersField.setAccessible(true);
+                modifiersField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
+            } catch (Throwable ignored) {}
+
             f.set(null, value);
-            Log.d(TAG, cls.getSimpleName() + "." + fieldName + " (static) = " + value);
+            Log.d(TAG, cls.getSimpleName() + "." + fieldName + " patched to " + value);
         } catch (Throwable ignored) {}
     }
 
-    private static void clearStaticFields(String className, String[] fields) {
+    private static void patchBuildFields() {
         try {
-            Class<?> c = Class.forName(className);
-            int cleared = 0;
-            for (String fname : fields) {
-                Field f = findField(c, fname);
-                if (f == null) continue;
-                try {
-                    f.setAccessible(true);
-                    f.set(null, null);
-                    cleared++;
-                } catch (Throwable ignored) {}
-            }
-            // Brute-force any Optional/Supplier static field on the class
-            for (Field f : c.getDeclaredFields()) {
-                String t = f.getType().getName();
-                if (t.contains("Optional") || t.contains("Supplier")) {
-                    try {
-                        f.setAccessible(true);
-                        f.set(null, null);
-                        cleared++;
-                    } catch (Throwable ignored) {}
-                }
-            }
-            Log.i(TAG, className + ": cleared " + cleared + " cached field(s)");
-        } catch (ClassNotFoundException e) {
-            // Class not present on this device
-        } catch (Throwable t) {
-            Log.e(TAG, "clearStaticFields " + className, t);
-        }
-    }
+            Class<?> b = Class.forName("android.os.Build");
+            
+            setStaticField(b, "BRAND", s("brand"));
+            setStaticField(b, "MANUFACTURER", s("manufacturer"));
+            setStaticField(b, "MODEL", s("model"));
+            setStaticField(b, "PRODUCT", s("productName"));
+            setStaticField(b, "DEVICE", s("deviceCode"));
+            setStaticField(b, "BOARD", s("board"));
+            setStaticField(b, "HARDWARE", s("hardware"));
+            setStaticField(b, "FINGERPRINT", s("buildFingerprint"));
+            setStaticField(b, "ID", s("buildId"));
+            setStaticField(b, "DISPLAY", s("buildDisplayId"));
+            setStaticField(b, "BOOTLOADER", s("bootloader"));
+            
+            Class<?> v = Class.forName("android.os.Build$VERSION");
+            setStaticField(v, "INCREMENTAL", s("buildIncremental"));
+            setStaticField(v, "RELEASE", s("buildRelease"));
+            setStaticField(v, "SECURITY_PATCH", s("securityPatch"));
+            
+            try {
+                int sdk = Integer.parseInt(s("buildSdk"));
+                setStaticField(v, "SDK_INT", sdk);
+            } catch (Throwable ignored) {}
 
-    private static void clearBuildCaches() {
-        try {
-            Class<?> buildClass = Class.forName("android.os.Build");
-            
-            // Clear static fields that cache build properties
-            String[] buildFields = {
-                "BRAND", "DEVICE", "DISPLAY", "FINGERPRINT", "HOST", "ID", "MODEL",
-                "PRODUCT", "TAGS", "TYPE", "USER", "HARDWARE", "BOARD", "BOOTLOADER",
-                "MANUFACTURER", "SERIAL", "VERSION"
-            };
-            
-            for (String fieldName : buildFields) {
-                try {
-                    Field f = buildClass.getDeclaredField(fieldName);
-                    f.setAccessible(true);
-                    f.set(null, null);
-                } catch (Throwable ignored) {}
-            }
-            
-            Log.i(TAG, "Build class caches cleared");
+            Log.i(TAG, "Build fields patched successfully");
         } catch (Throwable t) {
-            Log.e(TAG, "clearBuildCaches", t);
-        }
-    }
-
-    private static void clearSystemPropertyCaches() {
-        try {
-            Class<?> systemPropertiesClass = Class.forName("android.os.SystemProperties");
-            
-            // Try to clear any cached properties
-            for (Field f : systemPropertiesClass.getDeclaredFields()) {
-                if ((f.getModifiers() & Modifier.STATIC) == 0) continue;
-                String n = f.getName().toLowerCase();
-                if (n.contains("cache") || n.contains("map")) {
-                    try {
-                        f.setAccessible(true);
-                        Object val = f.get(null);
-                        if (val instanceof Map) {
-                            ((Map<?, ?>) val).clear();
-                        }
-                    } catch (Throwable ignored) {}
-                }
-            }
-            
-            Log.i(TAG, "SystemProperties caches cleared");
-        } catch (Throwable t) {
-            Log.e(TAG, "clearSystemPropertyCaches", t);
+            Log.e(TAG, "Failed to patch Build fields", t);
         }
     }
 }
