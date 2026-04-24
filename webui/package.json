@@ -1,15 +1,15 @@
 {
-  "name": "teleinject-webui",
+  "name": "pixeltester-webui",
   "version": "1.0.0",
-  "description": "TeleInject WebUI",
+  "description": "PixelTester WebUI",
   "scripts": {
     "dev": "vite",
     "build": "vite build --emptyOutDir"
   },
   "keywords": [
-    "teleinject"
+    "pixeltester"
   ],
-  "author": "Samo1408",
+  "author": "Modified for PixelTester",
   "license": "GPL-3.0-only",
   "type": "module",
   "dependencies": {

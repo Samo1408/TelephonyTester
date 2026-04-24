@@ -1,172 +1,233 @@
 <!DOCTYPE html>
-  <html>
-  <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Pixel Tester</title>
-      <link rel="stylesheet" href="assets/styles.css" type="text/css">
-      <script type="module" crossorigin src="assets/scripts.js"></script>
-  </head>
-  <body>
-      <div class="header">
-          <div>Pixel Tester - Device Spoof <span id="version-text"></span></div>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pixel Tester</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="shell">
+  <header class="header">
+    <div>
+      <h1>Pixel Tester <span class="ver" id="version-text"></span></h1>
+      <p class="sub">Safer Pixel device spoofing with local presets, validation, and app targeting.</p>
+    </div>
+    <div class="header-actions">
+      <button id="restore-last-btn" class="btn">Restore last saved</button>
+      <button id="restore-draft-btn" class="btn">Restore draft</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div id="api-banner" class="banner" style="display:none"></div>
+
+    <section class="card compact">
+      <label class="row toggle">
+        <span>
+          <strong>Master switch</strong>
+          <small>Spoof Device</small>
+        </span>
+        <input type="checkbox" id="spoofDevice" class="sw" checked>
+      </label>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Quick Pixel preset</h2>
+          <p class="hint">Built-in presets refreshed for modern Pixel devices. Selecting one fills the fields below.</p>
+        </div>
       </div>
-      <div class="content" unresolved>
+      <select id="device-preset" class="select">
+        <option value="">-- Choose a Pixel device --</option>
+      </select>
+    </section>
 
-          <!-- Master switch -->
-          <label class="spoof-option" id="spoofDevice-container">
-              Spoof Device Properties
-              <md-switch id="spoofDevice-toggle" selected></md-switch>
-              <md-ripple></md-ripple>
-          </label>
-
-          <!-- Property hook toggles -->
-          <div class="device-section">
-              <div class="section-header">Property Hooks</div>
-              <label class="spoof-option">
-                  Build Properties
-                  <md-switch id="hookBuildProperties" selected></md-switch>
-                  <md-ripple></md-ripple>
-              </label>
-              <label class="spoof-option">
-                  System Properties
-                  <md-switch id="hookSystemProperties" selected></md-switch>
-                  <md-ripple></md-ripple>
-              </label>
-              <label class="spoof-option">
-                  Vendor Properties
-                  <md-switch id="hookVendorProperties" selected></md-switch>
-                  <md-ripple></md-ripple>
-              </label>
-              <label class="spoof-option">
-                  ODM Properties
-                  <md-switch id="hookOdmProperties" selected></md-switch>
-                  <md-ripple></md-ripple>
-              </label>
-              <label class="spoof-option">
-                  Product Properties
-                  <md-switch id="hookProductProperties" selected></md-switch>
-                  <md-ripple></md-ripple>
-              </label>
-              <label class="spoof-option">
-                  Debug Properties
-                  <md-switch id="hookDebugProperties" selected></md-switch>
-                  <md-ripple></md-ripple>
-              </label>
-          </div>
-
-          <!-- Device preset selector -->
-          <div class="device-section">
-              <div class="section-header">Quick Device Presets</div>
-              <div class="preset-selector">
-                  <md-outlined-select id="device-preset" label="Select a Pixel device...">
-                      <md-select-option value="">-- Choose a device --</md-select-option>
-                  </md-outlined-select>
-              </div>
-          </div>
-
-          <!-- Device properties -->
-          <div class="device-section" id="device-section">
-              <div class="section-header">Device Properties</div>
-              <div class="device-grid">
-                  <div class="input-group"><label>Brand</label>
-                      <md-outlined-text-field id="brand" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Manufacturer</label>
-                      <md-outlined-text-field id="manufacturer" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Model</label>
-                      <md-outlined-text-field id="model" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Product Name</label>
-                      <md-outlined-text-field id="productName" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Device Code</label>
-                      <md-outlined-text-field id="deviceCode" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Board</label>
-                      <md-outlined-text-field id="board" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Hardware</label>
-                      <md-outlined-text-field id="hardware" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Board Platform</label>
-                      <md-outlined-text-field id="boardPlatform" type="text"></md-outlined-text-field></div>
-              </div>
-          </div>
-
-          <!-- Build properties -->
-          <div class="device-section">
-              <div class="section-header">Build Properties</div>
-              <div class="device-grid">
-                  <div class="input-group"><label>Build Fingerprint</label>
-                      <md-outlined-text-field id="buildFingerprint" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build ID</label>
-                      <md-outlined-text-field id="buildId" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build Display ID</label>
-                      <md-outlined-text-field id="buildDisplayId" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build Incremental</label>
-                      <md-outlined-text-field id="buildIncremental" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build Release</label>
-                      <md-outlined-text-field id="buildRelease" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build SDK</label>
-                      <md-outlined-text-field id="buildSdk" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Security Patch</label>
-                      <md-outlined-text-field id="securityPatch" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build Description</label>
-                      <md-outlined-text-field id="buildDescription" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build Flavor</label>
-                      <md-outlined-text-field id="buildFlavor" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build Product</label>
-                      <md-outlined-text-field id="buildProduct" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Build Characteristics</label>
-                      <md-outlined-text-field id="buildCharacteristics" type="text"></md-outlined-text-field></div>
-              </div>
-          </div>
-
-          <!-- Screen and SoC properties -->
-          <div class="device-section">
-              <div class="section-header">Display & SoC Properties</div>
-              <div class="device-grid">
-                  <div class="input-group"><label>Screen Width</label>
-                      <md-outlined-text-field id="screenWidth" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Screen Height</label>
-                      <md-outlined-text-field id="screenHeight" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Screen Density</label>
-                      <md-outlined-text-field id="screenDensity" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>SoC Model</label>
-                      <md-outlined-text-field id="socModel" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>SoC Manufacturer</label>
-                      <md-outlined-text-field id="socManufacturer" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Bootloader</label>
-                      <md-outlined-text-field id="bootloader" type="text"></md-outlined-text-field></div>
-                  <div class="input-group"><label>Baseband</label>
-                      <md-outlined-text-field id="baseband" type="text"></md-outlined-text-field></div>
-              </div>
-          </div>
-
-          <!-- Allowed apps -->
-          <div class="device-section">
-              <div class="section-header">Apps to Hook</div>
-
-              <div class="app-controls">
-                  <md-outlined-text-field id="app-search" type="text" label="Search packages"></md-outlined-text-field>
-                  <md-outlined-button id="reload-apps">Reload</md-outlined-button>
-                  <md-outlined-button id="clear-apps">Clear All</md-outlined-button>
-              </div>
-
-              <div id="app-list" class="app-list">
-                  <div class="hint">Loading installed packages...</div>
-              </div>
-
-              <div class="manual-add">
-                  <md-outlined-text-field id="add-app-input" type="text"
-                      label="Add package name manually (e.g. com.example)"></md-outlined-text-field>
-                  <md-filled-button id="add-app-btn">Add</md-filled-button>
-              </div>
-
-              <div class="hint">Tip: type <code>*</code> in the manual field and add it to apply to every app.</div>
-          </div>
-
-          <!-- Save -->
-          <div class="save-bar">
-              <md-filled-button id="save-btn">Save settings</md-filled-button>
-              <span id="save-status"></span>
-          </div>
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Local preset manager</h2>
+          <p class="hint">Save and restore custom combinations in this browser without touching the on-device config until you press Save settings.</p>
+        </div>
+        <span id="preset-count" class="meta-pill">0 local preset(s)</span>
       </div>
-  </body>
-  </html>
-  
+
+      <div class="grid grid-3">
+        <label class="full">Preset name <input id="preset-name" type="text" placeholder="My banking profile"></label>
+      </div>
+
+      <div class="row wrap">
+        <button id="save-user-preset" class="btn primary">Save current as preset</button>
+        <button id="export-user-presets" class="btn">Export presets</button>
+        <button id="import-user-presets-btn" class="btn">Import presets</button>
+        <input id="import-user-presets" type="file" accept="application/json" hidden>
+      </div>
+
+      <div class="row wrap top-gap">
+        <select id="user-preset-select" class="select grow">
+          <option value="">-- Saved local presets --</option>
+        </select>
+        <button id="load-user-preset" class="btn">Load</button>
+        <button id="delete-user-preset" class="btn danger">Delete</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Validation &amp; safety</h2>
+          <p class="hint">Checks run before saving to catch invalid values and risky combinations that can increase black-screen issues.</p>
+        </div>
+        <span id="validation-summary" class="meta-pill">Waiting for validation…</span>
+      </div>
+      <div id="validation-box" class="validation warn">
+        <div class="validation-line">Validation results will appear here.</div>
+      </div>
+      <div class="row wrap top-gap">
+        <button id="validate-btn" class="btn">Run validation</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Property hooks</h2>
+      <p class="hint">Build/System/Product are usually safest. Vendor and ODM are available, but guarded more strictly because they are the most common cause of display or startup issues.</p>
+      <label class="row toggle"><span>Build properties (ro.build.*)</span><input type="checkbox" id="hookBuildProperties" class="sw" checked></label>
+      <label class="row toggle"><span>System properties (ro.system.*)</span><input type="checkbox" id="hookSystemProperties" class="sw" checked></label>
+      <label class="row toggle"><span>Vendor properties (ro.vendor.*)</span><input type="checkbox" id="hookVendorProperties" class="sw"></label>
+      <label class="row toggle"><span>ODM properties (ro.odm.*)</span><input type="checkbox" id="hookOdmProperties" class="sw"></label>
+      <label class="row toggle"><span>Product properties (ro.product.*)</span><input type="checkbox" id="hookProductProperties" class="sw" checked></label>
+      <label class="row toggle"><span>Debug properties (ro.debuggable / ro.secure)</span><input type="checkbox" id="hookDebugProperties" class="sw" checked></label>
+    </section>
+
+    <section class="card">
+      <h2>Device properties</h2>
+      <div class="grid">
+        <label>Brand <input id="brand" type="text"></label>
+        <label>Manufacturer <input id="manufacturer" type="text"></label>
+        <label>Model <input id="model" type="text"></label>
+        <label>Product Name <input id="productName" type="text"></label>
+        <label>Device Code <input id="deviceCode" type="text"></label>
+        <label>Board <input id="board" type="text"></label>
+        <label>Hardware <input id="hardware" type="text"></label>
+        <label>Board Platform <input id="boardPlatform" type="text"></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Build properties</h2>
+      <div class="grid">
+        <label class="full">Build Fingerprint <input id="buildFingerprint" type="text"></label>
+        <label>Build ID <input id="buildId" type="text"></label>
+        <label>Build Display ID <input id="buildDisplayId" type="text"></label>
+        <label>Build Incremental <input id="buildIncremental" type="text"></label>
+        <label>Build Release <input id="buildRelease" type="text"></label>
+        <label>Build SDK <input id="buildSdk" type="text"></label>
+        <label>Security Patch <input id="securityPatch" type="text"></label>
+        <label>Build Description <input id="buildDescription" type="text"></label>
+        <label>Build Flavor <input id="buildFlavor" type="text"></label>
+        <label>Build Product <input id="buildProduct" type="text"></label>
+        <label>Build Characteristics <input id="buildCharacteristics" type="text"></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Display &amp; SoC</h2>
+      <div class="grid">
+        <label>Screen Width <input id="screenWidth" type="text"></label>
+        <label>Screen Height <input id="screenHeight" type="text"></label>
+        <label>Screen Density <input id="screenDensity" type="text"></label>
+        <label>SoC Model <input id="socModel" type="text"></label>
+        <label>SoC Manufacturer <input id="socManufacturer" type="text"></label>
+        <label>Bootloader <input id="bootloader" type="text"></label>
+        <label class="full">Baseband <input id="baseband" type="text"></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Hook toggles &mdash; identity</h2>
+          <p class="hint">Each toggle controls a separate Java-level hook. Disable any toggle to stop spoofing that identity entirely (recommended when troubleshooting black screens).</p>
+        </div>
+      </div>
+      <label class="row toggle"><span>Build.SERIAL / getSerial()</span><input type="checkbox" id="hookSerial" class="sw"></label>
+      <label class="row toggle"><span>ANDROID_ID (Settings.Secure)</span><input type="checkbox" id="hookAndroidId" class="sw"></label>
+      <label class="row toggle"><span>GSF ID (Google Services Framework)</span><input type="checkbox" id="hookGsfId" class="sw"></label>
+      <label class="row toggle"><span>MediaDrm Widevine ID</span><input type="checkbox" id="hookDrmId" class="sw"></label>
+      <label class="row toggle"><span>IMEI / MEID (TelephonyManager)</span><input type="checkbox" id="hookImei" class="sw"></label>
+      <label class="row toggle"><span>WiFi MAC address</span><input type="checkbox" id="hookWifiMac" class="sw"></label>
+      <label class="row toggle"><span>WiFi SSID / BSSID</span><input type="checkbox" id="hookWifiInfo" class="sw"></label>
+      <label class="row toggle"><span>Carrier / Network operator (MCC+MNC, name)</span><input type="checkbox" id="hookCarrier" class="sw"></label>
+      <label class="row toggle"><span>Phone number (line1Number)</span><input type="checkbox" id="hookPhoneNumber" class="sw"></label>
+    </section>
+
+    <section class="card">
+      <h2>Identity values</h2>
+      <div class="section-warning">
+        <strong>Warning:</strong> these hooks intercept Java APIs (Build.getSerial, TelephonyManager, WifiManager, Settings.Secure, MediaDrm). Spoofing them on the wrong app commonly causes <strong>black screens, login failures, and Play Integrity downgrades</strong>. Leave fields blank to keep the device&rsquo;s real value, and keep the corresponding toggle OFF until you have tested per-app.
+      </div>
+      <div class="field-group-title">Device identifiers</div>
+      <div class="grid">
+        <label>Serial number <input id="serialNumber" type="text" placeholder="e.g. 1A234567890ABC"></label>
+        <label>ANDROID_ID (16 hex chars) <input id="androidId" type="text" placeholder="0123456789abcdef"></label>
+        <label>GSF ID (16 hex chars) <input id="gsfId" type="text" placeholder="0123456789abcdef"></label>
+        <label>MediaDrm ID (32 hex chars) <input id="drmId" type="text" placeholder="0123456789abcdef0123456789abcdef"></label>
+      </div>
+      <div class="field-group-title">Telephony</div>
+      <div class="grid">
+        <label>IMEI (15 digits) <input id="imei" type="text" placeholder="350000000000000" inputmode="numeric"></label>
+        <label>MEID (14 hex chars) <input id="meid" type="text" placeholder="A0000000000000"></label>
+        <label>Phone number <input id="phoneNumber" type="text" placeholder="+15555550100"></label>
+        <label>SIM operator (MCC+MNC) <input id="simOperator" type="text" placeholder="310260" inputmode="numeric"></label>
+        <label>Network operator (MCC+MNC) <input id="networkOperator" type="text" placeholder="310260" inputmode="numeric"></label>
+        <label>Carrier name <input id="carrierName" type="text" placeholder="T-Mobile"></label>
+        <label>SIM operator name <input id="simOperatorName" type="text" placeholder="T-Mobile"></label>
+        <label>SIM country ISO <input id="simCountryIso" type="text" placeholder="us" maxlength="2"></label>
+        <label>Network country ISO <input id="networkCountryIso" type="text" placeholder="us" maxlength="2"></label>
+      </div>
+      <div class="field-group-title">Wi-Fi</div>
+      <div class="grid">
+        <label>WiFi MAC address <input id="wifiMac" type="text" placeholder="aa:bb:cc:dd:ee:ff"></label>
+        <label>WiFi SSID <input id="wifiSsid" type="text" placeholder="MyHomeWifi"></label>
+        <label>WiFi BSSID <input id="wifiBssid" type="text" placeholder="aa:bb:cc:dd:ee:ff"></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <h2>Apps to hook</h2>
+          <p class="hint">Unsafe system, launcher, telephony, and similar packages are blocked automatically.</p>
+        </div>
+        <span id="app-summary" class="meta-pill">0 selected • 0 blocked by safety rules</span>
+      </div>
+
+      <div class="row wrap">
+        <input id="app-search" type="text" placeholder="Search packages…" class="grow">
+        <button id="reload-apps" class="btn">Reload</button>
+        <button id="clear-apps" class="btn">Clear</button>
+        <button id="select-visible-apps" class="btn">Select visible</button>
+        <button id="deselect-visible-apps" class="btn">Deselect visible</button>
+        <button id="add-recommended-apps" class="btn">Add recommended</button>
+      </div>
+
+      <div id="app-list" class="app-list"><div class="hint">Loading installed packages…</div></div>
+
+      <div class="row wrap top-gap">
+        <input id="add-app-input" type="text" placeholder="com.example.app or *" class="grow">
+        <button id="add-app-btn" class="btn primary">Add</button>
+      </div>
+      <p class="hint">Tip: leave the list empty to spoof no app. Add <code>*</code> only if you deliberately want broad coverage, and avoid enabling Vendor/ODM with wildcard mode.</p>
+    </section>
+  </main>
+</div>
+
+<div class="save-bar">
+  <button id="save-btn" class="btn primary big">Save settings</button>
+  <span id="save-status" class="status"></span>
+</div>
+
+<script src="assets/scripts.js"></script>
+</body>
+</html>
