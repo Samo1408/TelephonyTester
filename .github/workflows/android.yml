@@ -1,4 +1,4 @@
-name: Pixel Spoofer
+name: Android CI
 
 on:
   push:
