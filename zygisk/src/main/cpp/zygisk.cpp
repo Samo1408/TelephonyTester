@@ -338,6 +338,10 @@ public:
         std::string pkg = process ? process : "";
         gEnv->ReleaseStringUTFChars(args->nice_name, process);
 
+        // Reset state for each process to prevent contamination
+        gConfig = {};
+        gDexBytes.clear();
+
         int fd = api->connectCompanion();
         if (fd < 0) return;
 
@@ -349,6 +353,7 @@ public:
         }
 
         if (!gConfig.spoofDevice || (!gConfig.allowedApps.empty() && !gConfig.isAllowed(pkg))) {
+            gConfig.spoofDevice = false; // Disable spoofing for this process
             close(fd);
             return;
         }
@@ -374,32 +379,12 @@ public:
     }
 
     void preServerSpecialize(zygisk::ServerSpecializeArgs *) override {
-        int fd = api->connectCompanion();
-        if (fd < 0) return;
-
-        applySocketTimeout(fd);
-        if (!pif::readConfig(fd, gConfig)) {
-            LOGE("failed to read config from companion");
-            close(fd);
-            return;
-        }
-
-        if (gConfig.needsDex()) {
-            if (!readVector(fd, gDexBytes)) {
-                LOGE("failed to read dex from companion");
-            }
-        }
-
-        if (gConfig.needsPropertyHook()) {
-            doHookProperty();
-        }
-        close(fd);
+        // Skip spoofing for system_server to prevent bootloops
+        gConfig.spoofDevice = false;
+        gDexBytes.clear();
     }
 
     void postServerSpecialize(const zygisk::ServerSpecializeArgs *) override {
-        if (gConfig.spoofDevice && !gDexBytes.empty()) {
-            injectDex();
-        }
         gDexBytes.clear();
         gDexBytes.shrink_to_fit();
     }
