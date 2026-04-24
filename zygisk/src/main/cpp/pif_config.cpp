@@ -64,11 +64,13 @@
           }
       }
 
-      static const std::array<std::string_view, 14> kTelephonyKeys = {
-          "COUNTRY_ISO", "COUNTRY_CODE", "SIM_OPERATOR_NUMERIC", "SIM_OPERATOR",
-          "SIM_OPERATOR_NAME", "SIM_COUNTRY_ISO", "NETWORK_COUNTRY_ISO",
-          "NETWORK_OPERATOR_NUMERIC", "OPERATOR_NUMERIC", "OPERATOR_NAME",
-          "MCC", "MCC_STRING", "MNC", "MNC_STRING"
+      static const std::array<std::string_view, 35> kDeviceKeys = {
+          // Build and device properties
+          "brand", "manufacturer", "model", "productName", "deviceCode", "board", "hardware",
+          "boardPlatform", "buildFingerprint", "buildId", "buildDisplayId", "buildIncremental",
+          "buildRelease", "buildSdk", "securityPatch", "buildDescription", "buildFlavor",
+          "buildProduct", "buildCharacteristics", "screenWidth", "screenHeight", "screenDensity",
+          "socModel", "socManufacturer", "bootloader", "baseband", "name", "code"
       };
 
       Config parseConfig(std::string_view content) {
@@ -104,15 +106,13 @@
               return v;
           };
 
-          if (auto v = take("spoofTelephony"); !v.empty()) config.spoofTelephony = parseBool(v);
-          if (auto v = take("hookTelephonyManager"); !v.empty()) config.hookTelephonyManager = parseBool(v);
-          if (auto v = take("hookSubscriptionInfo"); !v.empty()) config.hookSubscriptionInfo = parseBool(v);
-          if (auto v = take("hookEmergencyNumber"); !v.empty()) config.hookEmergencyNumber = parseBool(v);
-          if (auto v = take("hookTelephonyProperties"); !v.empty()) config.hookTelephonyProperties = parseBool(v);
-          if (auto v = take("hookSemTelephonyProps"); !v.empty()) config.hookSemTelephonyProps = parseBool(v);
-          else if (auto legacy = take("hookSemSystemProperties"); !legacy.empty()) config.hookSemTelephonyProps = parseBool(legacy);
-          if (auto v = take("hookULocale"); !v.empty()) config.hookULocale = parseBool(v);
-          if (auto v = take("hookCellIdentity"); !v.empty()) config.hookCellIdentity = parseBool(v);
+          if (auto v = take("spoofDevice"); !v.empty()) config.spoofDevice = parseBool(v);
+          if (auto v = take("hookBuildProperties"); !v.empty()) config.hookBuildProperties = parseBool(v);
+          if (auto v = take("hookSystemProperties"); !v.empty()) config.hookSystemProperties = parseBool(v);
+          if (auto v = take("hookVendorProperties"); !v.empty()) config.hookVendorProperties = parseBool(v);
+          if (auto v = take("hookOdmProperties"); !v.empty()) config.hookOdmProperties = parseBool(v);
+          if (auto v = take("hookProductProperties"); !v.empty()) config.hookProductProperties = parseBool(v);
+          if (auto v = take("hookDebugProperties"); !v.empty()) config.hookDebugProperties = parseBool(v);
           if (auto v = take("DEBUG"); !v.empty()) config.debug = parseBool(v);
 
           if (auto v = take("allowedApps"); !v.empty()) {
@@ -127,30 +127,29 @@
               }
           }
 
-          for (const auto& key : kTelephonyKeys) {
+          for (const auto& key : kDeviceKeys) {
               std::string keyStr(key);
               auto it = rawMap.find(keyStr);
               if (it != rawMap.end() && !it->second.empty()) {
-                  config.telephonyMap[keyStr] = it->second;
+                  config.deviceMap[keyStr] = it->second;
               }
           }
           return config;
       }
 
       bool writeConfig(int fd, const Config &config) {
-          bool ok = writeExact(fd, &config.spoofTelephony, sizeof(config.spoofTelephony));
-          ok = ok && writeExact(fd, &config.hookTelephonyManager, sizeof(config.hookTelephonyManager));
-          ok = ok && writeExact(fd, &config.hookSubscriptionInfo, sizeof(config.hookSubscriptionInfo));
-          ok = ok && writeExact(fd, &config.hookEmergencyNumber, sizeof(config.hookEmergencyNumber));
-          ok = ok && writeExact(fd, &config.hookTelephonyProperties, sizeof(config.hookTelephonyProperties));
-          ok = ok && writeExact(fd, &config.hookSemTelephonyProps, sizeof(config.hookSemTelephonyProps));
-          ok = ok && writeExact(fd, &config.hookULocale, sizeof(config.hookULocale));
-          ok = ok && writeExact(fd, &config.hookCellIdentity, sizeof(config.hookCellIdentity));
+          bool ok = writeExact(fd, &config.spoofDevice, sizeof(config.spoofDevice));
+          ok = ok && writeExact(fd, &config.hookBuildProperties, sizeof(config.hookBuildProperties));
+          ok = ok && writeExact(fd, &config.hookSystemProperties, sizeof(config.hookSystemProperties));
+          ok = ok && writeExact(fd, &config.hookVendorProperties, sizeof(config.hookVendorProperties));
+          ok = ok && writeExact(fd, &config.hookOdmProperties, sizeof(config.hookOdmProperties));
+          ok = ok && writeExact(fd, &config.hookProductProperties, sizeof(config.hookProductProperties));
+          ok = ok && writeExact(fd, &config.hookDebugProperties, sizeof(config.hookDebugProperties));
           ok = ok && writeExact(fd, &config.debug, sizeof(config.debug));
 
-          const uint32_t telephonyCount = (uint32_t)config.telephonyMap.size();
-          ok = ok && writeExact(fd, &telephonyCount, sizeof(telephonyCount));
-          for (const auto &[k, v] : config.telephonyMap) {
+          const uint32_t deviceCount = (uint32_t)config.deviceMap.size();
+          ok = ok && writeExact(fd, &deviceCount, sizeof(deviceCount));
+          for (const auto &[k, v] : config.deviceMap) {
               ok = ok && writeString(fd, k);
               ok = ok && writeString(fd, v);
           }
@@ -165,23 +164,22 @@
 
       bool readConfig(int fd, Config &config) {
           Config parsed;
-          bool ok = readExact(fd, &parsed.spoofTelephony, sizeof(parsed.spoofTelephony));
-          ok = ok && readExact(fd, &parsed.hookTelephonyManager, sizeof(parsed.hookTelephonyManager));
-          ok = ok && readExact(fd, &parsed.hookSubscriptionInfo, sizeof(parsed.hookSubscriptionInfo));
-          ok = ok && readExact(fd, &parsed.hookEmergencyNumber, sizeof(parsed.hookEmergencyNumber));
-          ok = ok && readExact(fd, &parsed.hookTelephonyProperties, sizeof(parsed.hookTelephonyProperties));
-          ok = ok && readExact(fd, &parsed.hookSemTelephonyProps, sizeof(parsed.hookSemTelephonyProps));
-          ok = ok && readExact(fd, &parsed.hookULocale, sizeof(parsed.hookULocale));
-          ok = ok && readExact(fd, &parsed.hookCellIdentity, sizeof(parsed.hookCellIdentity));
+          bool ok = readExact(fd, &parsed.spoofDevice, sizeof(parsed.spoofDevice));
+          ok = ok && readExact(fd, &parsed.hookBuildProperties, sizeof(parsed.hookBuildProperties));
+          ok = ok && readExact(fd, &parsed.hookSystemProperties, sizeof(parsed.hookSystemProperties));
+          ok = ok && readExact(fd, &parsed.hookVendorProperties, sizeof(parsed.hookVendorProperties));
+          ok = ok && readExact(fd, &parsed.hookOdmProperties, sizeof(parsed.hookOdmProperties));
+          ok = ok && readExact(fd, &parsed.hookProductProperties, sizeof(parsed.hookProductProperties));
+          ok = ok && readExact(fd, &parsed.hookDebugProperties, sizeof(parsed.hookDebugProperties));
           ok = ok && readExact(fd, &parsed.debug, sizeof(parsed.debug));
 
-          uint32_t telephonyCount = 0;
-          ok = ok && readExact(fd, &telephonyCount, sizeof(telephonyCount));
-          for (uint32_t i = 0; ok && i < telephonyCount; ++i) {
+          uint32_t deviceCount = 0;
+          ok = ok && readExact(fd, &deviceCount, sizeof(deviceCount));
+          for (uint32_t i = 0; ok && i < deviceCount; ++i) {
               std::string k, v;
               ok = readString(fd, k);
               ok = ok && readString(fd, v);
-              if (ok) parsed.telephonyMap.emplace(std::move(k), std::move(v));
+              if (ok) parsed.deviceMap.emplace(std::move(k), std::move(v));
           }
 
           uint32_t appsCount = 0;

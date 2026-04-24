@@ -7,28 +7,28 @@
 
   namespace pif {
       struct Config {
-          std::unordered_map<std::string, std::string> telephonyMap;
+          // Device and build properties for Pixel spoofing
+          std::unordered_map<std::string, std::string> deviceMap;
 
-          bool spoofTelephony = true;
+          bool spoofDevice = true;
 
-          // Per-class hook toggles (names match the real Android classes)
-          bool hookTelephonyManager      = true; // android.telephony.TelephonyManager
-          bool hookSubscriptionInfo      = true; // android.telephony.SubscriptionInfo
-          bool hookEmergencyNumber       = true; // android.telephony.emergency.EmergencyNumber
-          bool hookTelephonyProperties   = true; // android.sysprop.TelephonyProperties
-          bool hookSemTelephonyProps     = true; // com.samsung.telephony.sysprop.SemTelephonyProps
-          bool hookULocale               = true; // android.icu.util.ULocale (getDisplayCountry)
-          bool hookCellIdentity          = true; // android.telephony.CellIdentity{,Gsm,Lte,Wcdma,Tdscdma,Nr,Cdma}
+          // Property hook toggles
+          bool hookBuildProperties   = true; // ro.build.* and ro.product.* properties
+          bool hookSystemProperties  = true; // ro.system.* properties
+          bool hookVendorProperties  = true; // ro.vendor.* properties
+          bool hookOdmProperties     = true; // ro.odm.* properties
+          bool hookProductProperties = true; // ro.product.* properties
+          bool hookDebugProperties   = true; // ro.debuggable and related
 
           std::unordered_set<std::string> allowedApps;
           bool debug = false;
 
           [[nodiscard]] bool needsDex() const {
-              return spoofTelephony && (hookTelephonyManager || hookSubscriptionInfo
-                  || hookEmergencyNumber || hookULocale || hookCellIdentity);
+              return spoofDevice;
           }
           [[nodiscard]] bool needsPropertyHook() const {
-              return spoofTelephony && (hookTelephonyProperties || hookSemTelephonyProps);
+              return spoofDevice && (hookBuildProperties || hookSystemProperties 
+                  || hookVendorProperties || hookOdmProperties || hookProductProperties);
           }
           [[nodiscard]] bool isAllowed(const std::string& pkg) const {
               return allowedApps.find(pkg) != allowedApps.end();
