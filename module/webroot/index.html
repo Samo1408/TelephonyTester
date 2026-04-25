@@ -41,7 +41,20 @@
       </div>
       <select id="device-preset" class="select">
         <option value="">-- Choose a Pixel device --</option>
+        <option value="pixel6">Pixel 6</option>
+        <option value="pixel6pro">Pixel 6 Pro</option>
+        <option value="pixel7">Pixel 7</option>
+        <option value="pixel7pro">Pixel 7 Pro</option>
+        <option value="pixel7a">Pixel 7a</option>
+        <option value="pixel8">Pixel 8</option>
+        <option value="pixel8pro">Pixel 8 Pro</option>
+        <option value="pixel8a">Pixel 8a</option>
+        <option value="pixel9">Pixel 9</option>
+        <option value="pixel9pro">Pixel 9 Pro</option>
+        <option value="pixel9proxl">Pixel 9 Pro XL</option>
+        <option value="pixel9a">Pixel 9a</option>
       </select>
+      <p id="preset-debug" class="hint" style="margin-top:6px;"></p>
     </section>
 
     <section class="card">
@@ -86,6 +99,10 @@
       </div>
       <div class="row wrap top-gap">
         <button id="validate-btn" class="btn">Run validation</button>
+        <label class="row toggle inline-toggle" style="margin-left:auto;gap:8px;">
+          <span><strong>Validation enabled</strong><small>When OFF, no checks run and Save is never blocked.</small></span>
+          <input type="checkbox" id="validationEnabled" class="sw" checked>
+        </label>
       </div>
     </section>
 
