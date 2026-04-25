@@ -937,12 +937,22 @@
   function initPresetDropdown() {
     const sel = $('device-preset');
     if (!sel) return;
+    // Static <option>s already exist as a hard fallback.
+    // Re-sync them from PIXEL_DEVICES so labels stay in sync without duplicating entries.
+    const existing = new Set(Array.from(sel.options).map(o => o.value));
     Object.entries(PIXEL_DEVICES).forEach(([key, dev]) => {
+      if (existing.has(key)) {
+        const opt = Array.from(sel.options).find(o => o.value === key);
+        if (opt) opt.textContent = dev.name;
+        return;
+      }
       const opt = document.createElement('option');
       opt.value = key;
       opt.textContent = dev.name;
       sel.appendChild(opt);
     });
+    const dbg = $('preset-debug');
+    if (dbg) dbg.textContent = sel.options.length - 1 + ' presets loaded · API: ' + API_NAME;
     const ui = readStorage(STORAGE_UI, {});
     if (ui.selectedPreset) sel.value = ui.selectedPreset;
     sel.addEventListener('change', e => {
