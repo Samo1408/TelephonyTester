@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-package es.chiteroman.playintegrityfix.bridge;
+package es.chiteroman.playintegrityfix;
 
 import android.util.Log;
 
