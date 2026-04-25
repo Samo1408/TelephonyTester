@@ -93,20 +93,25 @@ public final class PifBridge {
 
     // -- helpers --
 
+    
     private static Method findMethod(Class<?> cls, String name, String sig) {
-        try {
-            for (Method m : (Method[]) HiddenApiBypass.getDeclaredMethods(cls)) {
-                if (!m.getName().equals(name)) continue;
-                if (jvmSignature(m).equals(sig)) return m;
-            }
-        } catch (Throwable t) {
-            // HiddenApiBypass may be unavailable; fall back.
-            for (Method m : cls.getDeclaredMethods()) {
+    try {
+        List<Executable> executables = HiddenApiBypass.getDeclaredMethods(cls);
+        for (Executable e : executables) {
+            if (e instanceof Method) {
+                Method m = (Method) e;
                 if (!m.getName().equals(name)) continue;
                 if (jvmSignature(m).equals(sig)) return m;
             }
         }
-        return null;
+    } catch (Throwable t) {
+        // HiddenApiBypass قد لا يكون متاحاً، نلجأ للطريقة التقليدية.
+        for (Method m : cls.getDeclaredMethods()) {
+            if (!m.getName().equals(name)) continue;
+            if (jvmSignature(m).equals(sig)) return m;
+        }
+    }
+    return null;
     }
 
     private static String jvmSignature(Method m) {
