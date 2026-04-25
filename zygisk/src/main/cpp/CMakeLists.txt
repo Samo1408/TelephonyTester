@@ -8,12 +8,7 @@ find_package(cxx REQUIRED CONFIG)
 
 link_libraries(cxx::cxx)
 
-add_library(zygisk SHARED
-    zygisk.cpp
-    pif_config.cpp
-    lsposed/bridge.cpp
-    lsposed/native_register.cpp
-)
+add_library(zygisk SHARED zygisk.cpp pif_config.cpp bridge.cpp native_register.cpp)
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/Dobby" Dobby)
 

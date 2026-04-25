@@ -1,5 +1,6 @@
 #include "zygisk.hpp"
 #include "Dobby/include/dobby.h"
+#include "lsposed/bridge.h"
 #include "pif_config.hpp"
 
 #include <android/log.h>
@@ -398,6 +399,11 @@ void injectDex() {
     if (gEnv->ExceptionCheck()) { gEnv->ExceptionClear(); return; }
 
     LOGD("[INJECT] EntryPoint.init done");
+
+    // Initialise the LSPosed-style bridge AFTER the dex is loaded so that
+    // PifBridge.installJavaHook is reachable. Subsequent spoof modules can
+    // now use lsposed::Bridge::get().hookJavaMethod / hookSymbol freely.
+    lsposed::Bridge::get().initialize(gEnv);
 }
 
 /*
