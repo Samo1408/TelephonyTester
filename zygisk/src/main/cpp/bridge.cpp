@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "bridge.h"
-#include "/Dobby/include/dobby.h"
+#include "Dobby/include/dobby.h"
 
 #include <android/log.h>
 #include <dlfcn.h>
