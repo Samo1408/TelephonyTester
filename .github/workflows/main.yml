@@ -26,23 +26,7 @@ jobs:
         distribution: 'temurin'
         java-version: 21
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 'latest'
-
-    - name: Setup Node
-      uses: actions/setup-node@v6
-      with:
-        node-version: 'latest'
-        cache: 'pnpm'
-        cache-dependency-path: webui/pnpm-lock.yaml
-
-    - name: Build WebUI
-      run: |
-        cd webui
-        pnpm install --frozen-lockfile
-        pnpm run build
+    
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
