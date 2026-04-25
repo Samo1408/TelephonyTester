@@ -1,6 +1,6 @@
 #include "zygisk.hpp"
 #include "Dobby/include/dobby.h"
-#include "lsposed/bridge.h"
+#include "bridge.h"
 #include "pif_config.hpp"
 
 #include <android/log.h>
