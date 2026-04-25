@@ -2,7 +2,7 @@ name: Build Module
 
 on:
   push:
-    branches: Pixel_Spoof
+    branches: PixelLsposed
     paths-ignore:
       - '**.md'
       - '.github/workflows/autopif.yml'
@@ -18,7 +18,7 @@ jobs:
       with:
         submodules: 'recursive'
         fetch-depth: 1
-        ref: Pixel_Spoof
+        ref: PixelLsposed
 
     - name: Set up JDK
       uses: actions/setup-java@v5
