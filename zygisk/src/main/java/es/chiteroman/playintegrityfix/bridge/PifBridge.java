@@ -4,8 +4,7 @@ package es.chiteroman.playintegrityfix.bridge;
 import android.util.Log;
 
 import org.lsposed.hiddenapibypass.HiddenApiBypass;
-import java.util.List;
-import java.lang.reflect.Executable;
+
 import java.lang.reflect.Method;
 
 /**
@@ -94,25 +93,22 @@ public final class PifBridge {
 
     // -- helpers --
 
-    
     private static Method findMethod(Class<?> cls, String name, String sig) {
-    try {
-        List<Executable> executables = HiddenApiBypass.getDeclaredMethods(cls);
-        for (Executable e : executables) {
-            if (e instanceof Method) {
-                Method m = (Method) e;
+        try {
+            for (Object obj : HiddenApiBypass.getDeclaredMethods(cls)) {
+                if (!(obj instanceof Method)) continue;
+                Method m = (Method) obj;
+                if (!m.getName().equals(name)) continue;
+                if (jvmSignature(m).equals(sig)) return m;
+            }
+        } catch (Throwable t) {
+            // HiddenApiBypass may be unavailable; fall back.
+            for (Method m : cls.getDeclaredMethods()) {
                 if (!m.getName().equals(name)) continue;
                 if (jvmSignature(m).equals(sig)) return m;
             }
         }
-    } catch (Throwable t) {
-        // HiddenApiBypass قد لا يكون متاحاً، نلجأ للطريقة التقليدية.
-        for (Method m : cls.getDeclaredMethods()) {
-            if (!m.getName().equals(name)) continue;
-            if (jvmSignature(m).equals(sig)) return m;
-        }
-    }
-    return null;
+        return null;
     }
 
     private static String jvmSignature(Method m) {
