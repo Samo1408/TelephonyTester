@@ -49,17 +49,8 @@ public final class PifBridge {
                 return false;
             }
 
-            // If the method is not native, we must make it native so RegisterNatives works.
-            if (!Modifier.isNative(target.getModifiers())) {
-                try {
-                    HiddenApiBypass.setAccessibilityFlags(target, target.getModifiers() | Modifier.NATIVE);
-                    Log.d(TAG, "Marked method as native: " + methodName);
-                } catch (Throwable t) {
-                    Log.e(TAG, "Failed to mark method as native: " + methodName, t);
-                    // Fallback: continue anyway, some runtimes might be lenient or 
-                    // nativeRegister might have its own tricks.
-                }
-            }
+            // Note: HiddenApiBypass.setAccessibilityFlags was removed in newer versions.
+            // We rely on nativeRegister to handle the native marking if necessary.
 
             // Hand off to the native registrar, which performs:
             //   env->RegisterNatives(cls, &methods[1], 1)
