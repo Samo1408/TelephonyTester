@@ -23,7 +23,7 @@
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_es_chiteroman_playintegrityfix_bridge_PifBridge_nativeRegister(
+Java_es_chiteroman_playintegrityfix_PifBridge_nativeRegister(
         JNIEnv *env, jclass /*self*/,
         jclass targetClass, jstring jName, jstring jSig, jlong fnPtr) {
 

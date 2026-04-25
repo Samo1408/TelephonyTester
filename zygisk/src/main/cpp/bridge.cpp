@@ -26,7 +26,7 @@ void Bridge::initialize(JNIEnv *env) {
     // Look up the Java-side helper. The class is loaded by EntryPoint
     // from the injected classes.dex BEFORE this is called.
     jclass cls = env->FindClass(
-        "es/chiteroman/playintegrityfix/bridge/PifBridge");
+        "es/chiteroman/playintegrityfix/PifBridge");
     if (!cls) {
         env->ExceptionClear();
         LOGE("PifBridge class not found — Java hooks disabled");
