@@ -11,6 +11,7 @@
   const STORAGE_LAST_SAVED = 'pixeltester.lastSaved.v2';
   const STORAGE_DRAFT = 'pixeltester.draft.v2';
   const STORAGE_UI = 'pixeltester.ui.v2';
+  const STORAGE_VALIDATION = 'pixeltester.validationEnabled.v2';
 
   const RELEASE_TO_SDK = {
     '14': '34',
@@ -186,6 +187,152 @@
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
   }
 
+  function isValidationEnabled() {
+    const v = readStorage(STORAGE_VALIDATION, true);
+    return v !== false;
+  }
+
+  function setValidationEnabled(on) {
+    writeStorage(STORAGE_VALIDATION, !!on);
+  }
+
+  // ===== Random value generators (per-field) =====
+  function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function randHex(n) {
+    let s = '';
+    for (let i = 0; i < n; i++) s += '0123456789abcdef'.charAt(randInt(0, 15));
+    return s;
+  }
+  function randDigits(n) {
+    let s = '';
+    for (let i = 0; i < n; i++) s += String(randInt(0, 9));
+    return s;
+  }
+  function randMac() {
+    const parts = [];
+    for (let i = 0; i < 6; i++) parts.push(randHex(2));
+    return parts.join(':');
+  }
+  function randPick(arr) { return arr[randInt(0, arr.length - 1)]; }
+  // Luhn IMEI (15 digits)
+  function randImei() {
+    const tac = randDigits(8);
+    const serial = randDigits(6);
+    const base = tac + serial;
+    let sum = 0;
+    for (let i = 0; i < base.length; i++) {
+      let d = parseInt(base.charAt(i), 10);
+      if (i % 2 === 1) { d *= 2; if (d > 9) d -= 9; }
+      sum += d;
+    }
+    const check = (10 - (sum % 10)) % 10;
+    return base + String(check);
+  }
+  function randSecurityPatch() {
+    const y = randInt(2023, 2026);
+    const m = String(randInt(1, 12)).padStart(2, '0');
+    const d = '05';
+    return y + '-' + m + '-' + d;
+  }
+  function randIncremental() {
+    return String(randInt(10000000, 99999999));
+  }
+  function randBuildId() {
+    const a = String.fromCharCode(randInt(65, 90)) + String.fromCharCode(randInt(65, 90));
+    return a + randInt(10, 99) + '.' + randDigits(6) + '.' + randDigits(3);
+  }
+
+  const RANDOM_GENERATORS = {
+    // Device identifiers
+    serialNumber:    () => (randHex(2).toUpperCase() + randDigits(2) + randHex(10).toUpperCase()).slice(0, 14),
+    androidId:       () => randHex(16),
+    gsfId:           () => randHex(16),
+    drmId:           () => randHex(32),
+    // Telephony
+    imei:            () => randImei(),
+    meid:            () => randHex(14).toUpperCase(),
+    phoneNumber:     () => '+1' + randDigits(10),
+    simOperator:     () => randDigits(6),
+    networkOperator: () => randDigits(6),
+    carrierName:     () => randPick(['T-Mobile', 'Verizon', 'AT&T', 'Vodafone', 'Orange', 'EE', 'O2', 'Telstra']),
+    simOperatorName: () => randPick(['T-Mobile', 'Verizon', 'AT&T', 'Vodafone', 'Orange', 'EE', 'O2', 'Telstra']),
+    simCountryIso:   () => randPick(['us', 'gb', 'de', 'fr', 'jp', 'au', 'ca', 'br']),
+    networkCountryIso: () => randPick(['us', 'gb', 'de', 'fr', 'jp', 'au', 'ca', 'br']),
+    // Wi-Fi
+    wifiMac:         () => randMac(),
+    wifiBssid:       () => randMac(),
+    wifiSsid:        () => 'Net_' + randHex(4).toUpperCase(),
+    // Build / device
+    buildId:         () => randBuildId(),
+    buildDisplayId:  () => randBuildId(),
+    buildIncremental: () => randIncremental(),
+    buildRelease:    () => String(randInt(12, 17)),
+    buildSdk:        () => String(randInt(31, 37)),
+    securityPatch:   () => randSecurityPatch(),
+    screenWidth:     () => String(randPick([1080, 1440, 1200, 1344])),
+    screenHeight:    () => String(randPick([2400, 2424, 2856, 2992, 3120])),
+    screenDensity:   () => String(randPick([411, 420, 440, 480, 512])),
+    bootloader:      () => 'bootloader-' + randHex(8),
+    baseband:        () => 'g5300q-' + randHex(6),
+    // Generic text fields — fall back to short random token
+    brand:           () => randPick(['google', 'samsung', 'oneplus', 'xiaomi']),
+    manufacturer:    () => randPick(['Google', 'Samsung', 'OnePlus', 'Xiaomi']),
+    model:           () => 'Model-' + randHex(3).toUpperCase(),
+    productName:     () => 'product_' + randHex(4),
+    deviceCode:      () => 'dev_' + randHex(4),
+    board:           () => 'board_' + randHex(4),
+    hardware:        () => 'hw_' + randHex(4),
+    boardPlatform:   () => 'plat' + randInt(100, 999),
+    socModel:        () => 'SoC ' + randHex(3).toUpperCase(),
+    socManufacturer: () => randPick(['Google', 'Qualcomm', 'MediaTek', 'Samsung']),
+    buildDescription: () => 'desc_' + randHex(6),
+    buildFlavor:     () => 'flavor-user',
+    buildProduct:    () => 'product_' + randHex(4),
+    buildCharacteristics: () => randPick(['nosdcard', 'default']),
+    buildFingerprint: () => {
+      const b = randPick(['google', 'samsung']);
+      const p = 'product_' + randHex(4);
+      const d = 'dev_' + randHex(4);
+      const r = String(randInt(12, 17));
+      const id = randBuildId();
+      const inc = randIncremental();
+      return b + '/' + p + '/' + d + ':' + r + '/' + id + '/' + inc + ':user/release-keys';
+    }
+  };
+
+  function genericRandomFor(input) {
+    const ph = (input.getAttribute('placeholder') || '').toLowerCase();
+    if (input.getAttribute('inputmode') === 'numeric') return randDigits(6);
+    if (ph.includes('hex')) return randHex(16);
+    return 'rand_' + randHex(4);
+  }
+
+  function injectRandomButtons() {
+    const inputs = document.querySelectorAll('main .card input[type="text"]');
+    inputs.forEach(input => {
+      if (!input.id) return;
+      if (input.parentElement && input.parentElement.querySelector('.rand-btn')) return;
+      // Only attach to inputs sitting inside a <label> field cell
+      const host = input.parentElement;
+      if (!host || host.tagName !== 'LABEL') return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'rand-btn';
+      btn.title = 'Generate random value';
+      btn.setAttribute('aria-label', 'Generate random value for ' + input.id);
+      btn.textContent = '🎲';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const gen = RANDOM_GENERATORS[input.id] || (() => genericRandomFor(input));
+        input.value = gen();
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      host.classList.add('has-rand');
+      host.appendChild(btn);
+    });
+  }
+
   function detectApi() {
     const ksuObj = (typeof window !== 'undefined' && window.ksu) || (typeof ksu !== 'undefined' ? ksu : null);
     if (ksuObj && typeof ksuObj.exec === 'function') {
@@ -321,6 +468,9 @@
   }
 
   function validateState(state) {
+    if (!isValidationEnabled()) {
+      return { errors: [], warnings: [], disabled: true };
+    }
     const errors = [];
     const warnings = [];
     const { values, toggles } = state;
@@ -355,10 +505,6 @@
       if (values.buildRelease && fpRelease !== values.buildRelease) warnings.push('buildFingerprint Android release does not match Build Release.');
       if (values.buildId && fpBuildId !== values.buildId) warnings.push('buildFingerprint build ID does not match Build ID.');
       if (values.buildIncremental && fpIncremental !== values.buildIncremental) warnings.push('buildFingerprint incremental does not match Build Incremental.');
-    }
-
-    if (values.buildRelease && RELEASE_TO_SDK[values.buildRelease] && RELEASE_TO_SDK[values.buildRelease] !== values.buildSdk) {
-      warnings.push(`Build SDK is unusual for Android ${values.buildRelease}. Expected ${RELEASE_TO_SDK[values.buildRelease]}.`);
     }
 
     if (values.buildDescription && values.deviceCode && !values.buildDescription.includes(values.deviceCode)) {
@@ -445,6 +591,12 @@
     if (!box || !summary) return result;
 
     box.innerHTML = '';
+    if (result.disabled) {
+      summary.textContent = 'Validation disabled';
+      box.className = 'validation warn';
+      box.innerHTML = '<div class="validation-line">Validation is OFF. Save will never be blocked. Toggle it back on to run safety checks.</div>';
+      return result;
+    }
     const errCount = result.errors.length;
     const warnCount = result.warnings.length;
 
@@ -663,8 +815,28 @@
   }
 
   async function loadConfig() {
-    const text = await sh('[ -f ' + CUSTOM_CONFIG + ' ] && cat ' + CUSTOM_CONFIG + ' || cat ' + CONFIG_PATH + ' 2>/dev/null');
+    // Read via base64 to avoid encoding/whitespace issues across loaders.
+    const cmd = '(([ -f ' + CUSTOM_CONFIG + ' ] && cat ' + CUSTOM_CONFIG + ') || cat ' + CONFIG_PATH + ') 2>/dev/null | base64';
+    const r = await shellExec(cmd);
+    let text = '';
+    if (r.errno === 0 && (r.stdout || '').trim()) {
+      try { text = decodeURIComponent(escape(atob((r.stdout || '').replace(/\s+/g, '')))); }
+      catch (_) { text = r.stdout; }
+    }
     const map = parseConf(text);
+    const hasAny = Object.keys(map).length > 0;
+    if (!hasAny) {
+      // Fall back to last-saved snapshot in browser storage so the user
+      // never sees an empty form when the on-disk config exists but the
+      // shell bridge could not read it.
+      const last = readStorage(STORAGE_LAST_SAVED, null);
+      if (last) {
+        applyState(last, { skipDraftSave: true });
+        notify('Loaded last saved snapshot from this browser (could not read /data/adb/*.conf via WebUI bridge).', true);
+        return;
+      }
+      notify('No saved configuration found yet. Pick a preset and Save.', false);
+    }
     const state = {
       values: {},
       toggles: {},
@@ -681,7 +853,7 @@
     }
     state.selectedPreset = captureCurrentPresetLabel(state.values);
     applyState(state, { skipDraftSave: true });
-    writeStorage(STORAGE_LAST_SAVED, snapshotCurrentState());
+    if (hasAny) writeStorage(STORAGE_LAST_SAVED, snapshotCurrentState());
   }
 
   async function saveConfig() {
@@ -691,20 +863,24 @@
     }
     const state = collectValues();
     const validation = renderValidation(validateState(state));
-    if (validation.errors.length) {
+    if (!validation.disabled && validation.errors.length) {
       notify('Save blocked until validation errors are fixed.', false);
       return;
     }
     const content = buildConf(state.values, state.toggles, new Set(state.apps));
     const b64 = btoa(unescape(encodeURIComponent(content)));
-    const cmd = "echo '" + b64 + "' | base64 -d > " + CUSTOM_CONFIG
+    // Persist to BOTH locations and verify by reading the file size back.
+    const cmd = "mkdir -p /data/adb /data/adb/modules/pixeltester"
+      + " && echo '" + b64 + "' | base64 -d > " + CUSTOM_CONFIG
       + " && cp -f " + CUSTOM_CONFIG + " " + CONFIG_PATH
-      + " && chmod 0644 " + CUSTOM_CONFIG + " " + CONFIG_PATH;
+      + " && chmod 0644 " + CUSTOM_CONFIG + " " + CONFIG_PATH
+      + " && wc -c < " + CUSTOM_CONFIG;
     notify('Saving…', true);
     const r = await shellExec(cmd);
     if (r.errno === 0) {
+      const bytes = parseInt((r.stdout || '0').trim(), 10) || 0;
       writeStorage(STORAGE_LAST_SAVED, snapshotCurrentState());
-      notify('Saved. Restart hooked apps to apply.', true);
+      notify('Saved (' + bytes + ' bytes) → ' + CUSTOM_CONFIG + '. Restart hooked apps to apply.', true);
     } else {
       notify('Save failed: ' + (r.stderr || ('errno=' + r.errno)), false);
     }
@@ -991,8 +1167,25 @@
     bind('save-btn', 'click', saveConfig);
     bind('validate-btn', 'click', () => {
       const result = runValidation();
-      notify(result.errors.length ? 'Validation found blocking issues.' : 'Validation complete.', !result.errors.length);
+      if (result.disabled) {
+        notify('Validation is disabled.', true);
+      } else {
+        notify(result.errors.length ? 'Validation found blocking issues.' : 'Validation complete.', !result.errors.length);
+      }
     });
+
+    const valToggle = $('validationEnabled');
+    if (valToggle) {
+      valToggle.checked = isValidationEnabled();
+      valToggle.addEventListener('change', () => {
+        setValidationEnabled(valToggle.checked);
+        runValidation();
+        notify(valToggle.checked ? 'Validation enabled.' : 'Validation disabled — Save will not be blocked.', true);
+      });
+    }
+
+    injectRandomButtons();
+
     bind('restore-last-btn', 'click', restoreLastSaved);
     bind('restore-draft-btn', 'click', restoreDraft);
 
