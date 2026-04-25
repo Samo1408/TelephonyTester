@@ -2,7 +2,7 @@ package es.chiteroman.playintegrityfix;
 
 import android.util.Log;
 import org.json.JSONObject;
-import es.chiteroman.playintegrityfix.bridge.PifBridge;
+import es.chiteroman.playintegrityfix.PifBridge;
 
 public final class EntryPoint {
     public static final String TAG = "PixelTester";
