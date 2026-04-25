@@ -4,7 +4,8 @@ package es.chiteroman.playintegrityfix.bridge;
 import android.util.Log;
 
 import org.lsposed.hiddenapibypass.HiddenApiBypass;
-
+import java.util.List;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 
 /**
